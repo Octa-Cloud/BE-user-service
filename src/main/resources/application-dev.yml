@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: ${RDB_USERNAME:root}
+    url: ${RDB_URL}
+    password: ${RDB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/mong}
+
+jwt-properties:
+  key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
+  access-token-expiration-period-day: 1
+  access-token-subject: AccessToken
+  refresh-token-expiration-period-day: 30
+  refresh-token-subject: RefreshToken
+  token-header: Authorization
+  bearer: Bearer
+  id: id
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    groups-order: DESC
+    tags-sorter: alpha
+    operations-sorter: method
+    enabled: true
+  paths-to-match:
+    - /api/**
