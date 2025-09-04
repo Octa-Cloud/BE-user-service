@@ -33,13 +33,15 @@ public class TokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
-    private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
-    private static final String TOKEN_HEADER = "Authorization";
-    private static final String BEARER = "Bearer ";
-    private static final String ID_CLAIM = "id";
+    public String createAccessToken(Long id) {
+        return createToken(id, jwtProperties.getAccessTokenSubject());
+    }
 
-    public String createToken(Long id, String subject) {
+    public String createRefreshToken(Long id) {
+        return createToken(id, jwtProperties.getRefreshTokenSubject());
+    }
+
+    private String createToken(Long id, String subject) {
         Date now = new Date();
         return Jwts.builder()
                 .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
@@ -51,7 +53,7 @@ public class TokenProvider {
                                 .toInstant()
                 ))
                 .setSubject(subject)
-                .claim(ID_CLAIM, id)
+                .claim(jwtProperties.getId(), id)
                 .signWith(Keys.hmacShaKeyFor(jwtProperties.getKey().getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -71,21 +73,21 @@ public class TokenProvider {
         Claims claims = getClaims(token);
         Set<SimpleGrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
 
-        return new UsernamePasswordAuthenticationToken(new User(String.valueOf(claims.get(ID_CLAIM, Long.class)), "", authorities), token, authorities);
+        return new UsernamePasswordAuthenticationToken(new User(String.valueOf(claims.get(jwtProperties.getId(), Long.class)), "", authorities), token, authorities);
     }
 
     public Optional<Long> getId(String token) {
         try {
-            return Optional.ofNullable(getClaims(token).get(ID_CLAIM, Long.class));
+            return Optional.ofNullable(getClaims(token).get(jwtProperties.getId(), Long.class));
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
     public Optional<String> getToken(HttpServletRequest request) {
-        return Optional.ofNullable(request.getHeader(TOKEN_HEADER))
-                .filter(token -> token.startsWith(BEARER))
-                .map(token -> token.replace(BEARER, ""));
+        return Optional.ofNullable(request.getHeader(jwtProperties.getTokenHeader()))
+                .filter(token -> token.startsWith(jwtProperties.getBearer()))
+                .map(token -> token.replace(jwtProperties.getBearer() + " ", ""));
     }
 
     private Claims getClaims(String token) {
@@ -111,7 +113,7 @@ public class TokenProvider {
     public boolean isAccessToken(String token) {
         try {
             String subject = getClaims(token).getSubject();
-            return ACCESS_TOKEN_SUBJECT.equals(subject);
+            return jwtProperties.getAccessTokenSubject().equals(subject);
         } catch (Exception e) {
             throw new RestApiException(UNSUPPORTED_JWT);
         }

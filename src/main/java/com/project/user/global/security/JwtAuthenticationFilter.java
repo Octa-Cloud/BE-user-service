@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             else
                 throw new RestApiException(INVALID_ACCESS_TOKEN);
 
-            if(isExcludedPathForWhitelist(request)) {
+            if(!isExcludedPathForWhitelist(request)) {
                 tokenWhitelistService.whitelist(token, Duration.ofSeconds(30));
             }
 

@@ -21,6 +21,7 @@ public enum AuthErrorStatus implements BaseCodeInterface {
     FAILED_SOCIAL_LOGIN(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH007", "소셜 로그인에 실패하였습니다."),
     LOGIN_ERROR(HttpStatus.BAD_REQUEST, "AUTH008", "잘못된 아이디 혹은 비밀번호입니다."),
     ALREADY_REGISTERED_EMAIL(HttpStatus.BAD_REQUEST, "AUTH009", "이미 가입된 이메일입니다."),
+    NOT_VERIFIED_EMAIL(HttpStatus.UNAUTHORIZED, "AUTH009", "인증되지 않은 이메일입니다."),
     INVALID_EMAIL_DOMAIN(HttpStatus.BAD_REQUEST, "AUTH009", "유효하지 않은 이메일 도메인입니다."),
     FAILED_EMAIL_VERIFICATION(HttpStatus.BAD_REQUEST, "AUTH009", "이메일 인증에 실패하였습니다."),
     ;

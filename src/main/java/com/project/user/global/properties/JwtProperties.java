@@ -17,5 +17,8 @@ public class JwtProperties {
     private final Long refreshTokenExpirationPeriodDay;
     private final String accessTokenSubject;
     private final String refreshTokenSubject;
+    private final String tokenHeader;
+    private final String bearer;
+    private final String id;
 
 }

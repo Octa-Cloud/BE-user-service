@@ -1,5 +1,126 @@
-spring:
-  application:
-    name: user-service
 server:
-  port: 8084
+  port: 8080
+
+spring:
+  datasource:
+    username: ${RDB_USERNAME:root}
+    url: ${RDB_URL}
+    password: ${RDB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/mong}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.timeout: 5000
+
+jwt-properties:
+  key: KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==
+  access-token-expiration-period-day: 1
+  access-token-subject: AccessToken
+  refresh-token-expiration-period-day: 30
+  refresh-token-subject: RefreshToken
+  token-header: Authorization
+  bearer: Bearer
+  id: id
+
+exclude-auth-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - path-pattern: /api/users/login
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+
+exclude-blacklist-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - path-pattern: /api/users/login
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+
+exclude-whitelist-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - pathPattern: /api/users/login
+      method: POST
+    - path-pattern: /api/users/logout
+      method: DELETE
+    - path-pattern: /api/token/reissue
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    groups-order: DESC
+    tags-sorter: alpha
+    operations-sorter: method
+    enabled: true
+  paths-to-match:
+    - /api/**

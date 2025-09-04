@@ -1,11 +1,11 @@
-package com.project.user.domain.domain.service;
+package com.project.user.domain.application.usecase;
 
+import com.project.user.domain.application.dto.response.TokenReissueResponse;
+import com.project.user.domain.domain.service.RefreshTokenService;
 import com.project.user.global.exception.RestApiException;
-import com.project.user.global.properties.JwtProperties;
 import com.project.user.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 
@@ -13,27 +13,23 @@ import static com.project.user.global.exception.code.status.AuthErrorStatus.EXPI
 import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_REFRESH_TOKEN;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
-public class TokenReissueService {
+public class TokenReissueUseCase {
 
-    private final TokenProvider tokenProvider;
-    private final JwtProperties jwtProperties;
     private final RefreshTokenService refreshTokenService;
-    private final UserService userService;
+    private final TokenProvider tokenProvider;
 
-    public TokenReissueResponse reissue(String refreshToken, Long userNo) {
-        if (!refreshTokenService.isExist(refreshToken, userNo))
+    public TokenReissueResponse execute(String refreshToken, Long userNo) {
+        if(!refreshTokenService.isExist(refreshToken, userNo))
             throw new RestApiException(INVALID_REFRESH_TOKEN);
 
         refreshTokenService.deleteRefreshToken(userNo);
 
-        User user = userService.findById(userNo);
-        String newAccessToken = tokenProvider.createToken(userNo, jwtProperties.getAccessTokenSubject());
-        String newRefreshToken = tokenProvider.createToken(userNo, jwtProperties.getRefreshTokenSubject());
+        String newAccessToken = tokenProvider.createAccessToken(userNo);
+        String newRefreshToken = tokenProvider.createRefreshToken(userNo);
+
         Duration duration = tokenProvider.getRemainingDuration(refreshToken)
                 .orElseThrow(() -> new RestApiException(EXPIRED_MEMBER_JWT));
-
         refreshTokenService.saveRefreshToken(userNo, newRefreshToken, duration);
 
         return new TokenReissueResponse(newAccessToken, newRefreshToken);

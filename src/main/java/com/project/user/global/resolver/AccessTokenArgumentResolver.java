@@ -11,7 +11,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_REFRESH_TOKEN;
+import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ACCESS_TOKEN;
 import static com.project.user.global.exception.code.status.GlobalErrorStatus._UNAUTHORIZED;
 
 @RequiredArgsConstructor
@@ -32,15 +32,14 @@ public class AccessTokenArgumentResolver implements HandlerMethodArgumentResolve
                                   WebDataBinderFactory binderFactory) throws Exception {
         HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
 
-        if (request == null) {
+        if (request == null)
             throw new RestApiException(_UNAUTHORIZED);
-        }
 
         String token = tokenProvider.getToken(request)
                 .orElseThrow(() -> new RestApiException(_UNAUTHORIZED));
 
         if (!tokenProvider.isAccessToken(token))
-            throw new RestApiException(INVALID_REFRESH_TOKEN);
+            throw new RestApiException(INVALID_ACCESS_TOKEN);
 
         return token;
     }

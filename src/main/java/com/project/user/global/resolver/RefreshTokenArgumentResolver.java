@@ -33,9 +33,8 @@ public class RefreshTokenArgumentResolver implements HandlerMethodArgumentResolv
                                   WebDataBinderFactory binderFactory) throws Exception {
         HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
 
-        if (request == null) {
+        if (request == null)
             throw new RestApiException(_UNAUTHORIZED);
-        }
 
         String token = tokenProvider.getToken(request)
                 .orElseThrow(() -> new RestApiException(_UNAUTHORIZED));
