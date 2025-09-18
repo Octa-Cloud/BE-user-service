@@ -68,56 +68,17 @@ jobs:
           docker build -t ${IMAGE_URI}:${TAG} -t ${IMAGE_URI}:latest .
           docker push ${IMAGE_URI}:${TAG}
           docker push ${IMAGE_URI}:latest
+          echo "IMAGE_URI=${IMAGE_URI}:${TAG}" >> $GITHUB_ENV
 
-      # infra repo에 이미지 태그 업데이트 PR 생성
-      - name: Open PR to infra repo with new image tag
+      # (옵션1) infra 배포 워크플로 직접 트리거로 즉시 배포
+      - name: Trigger infra deploy with IMAGE_URI
         if: github.ref == 'refs/heads/main'
         env:
-          # 여기서 GH_TOKEN은 PAT(또는 GITHUB_TOKEN)로 충분.
-          # 다른 조직/리포에 push한다면 PAT(repo, workflow 권한) 권장.
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ secrets.INFRA_REPO }}   # e.g. org/infra-repo
-          REGION: ${{ env.REGION }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          REPO: ${{ env.REPO }}
-          IMAGE: ${{ env.IMAGE }}
+          IMAGE_URI: ${{ env.IMAGE_URI }}
         run: |
           set -euo pipefail
-          git config --global user.email "action@github.com"
-          git config --global user.name "github-actions"
-
-          rm -rf infra
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
-          cd infra
-
-          BR=update-user-${GITHUB_SHA}
-          git checkout -b ${BR}
-
-          TARGET="k8s-gcp/user-service/deployment-gcp.yaml"
-          if [ -f "${TARGET}" ]; then
-            sed -i "s|image: .*${IMAGE}:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}|g" "${TARGET}"
-            git add "${TARGET}"
-          else
-            echo "::warning::${TARGET} 파일을 찾을 수 없어 변경을 건너뜁니다."
-          fi
-
-          # 변경이 없으면 조용히 종료
-          if git diff --cached --quiet; then
-            echo "No changes to commit. Skipping PR."
-            exit 0
-          fi
-
-          git commit -m "chore: user-service image ${GITHUB_SHA}"
-          git push -u origin ${BR}
-
-          # gh는 환경변수 GH_TOKEN을 자동 사용. gh auth login 불필요.
-          # 중복 PR 방지: 동일 head 브랜치로 열린 PR이 있으면 생성하지 않음
-          if gh pr list --repo "${INFRA_REPO}" --head "${BR}" --json number --jq 'length' | grep -q '^0$'; then
-            gh pr create \
-              --repo "${INFRA_REPO}" \
-              --title "chore: user-service image ${GITHUB_SHA}" \
-              --body "Update image to ${GITHUB_SHA}" \
-              --head "${BR}"
-          else
-            echo "PR already exists for branch ${BR}. Skipping create."
-          fi
+          echo "Triggering infra deploy with IMAGE_URI=${IMAGE_URI}"
+          echo "${GH_TOKEN}" | gh auth login --with-token
+          gh workflow run gcp-deploy.yml -R ${INFRA_REPO} --ref main -f IMAGE_URI="${IMAGE_URI}"
