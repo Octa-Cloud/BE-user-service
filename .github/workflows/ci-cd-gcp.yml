@@ -117,10 +117,22 @@ jobs:
           # gh는 환경변수 GH_TOKEN을 자동 사용. gh auth login 불필요.
           # 중복 PR 방지: 동일 head 브랜치로 열린 PR이 있으면 생성하지 않음
           if gh pr list --repo "${INFRA_REPO}" --head "${BR}" --json number --jq 'length' | grep -q '^0$'; then
+            IMG="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}"
+            cat > pr_body.txt <<'PR'
+            Update image to ${GITHUB_SHA}
+
+            Apply directly if needed:
+            ```
+            kubectl -n microservices set image deployment/user-service user-service=__IMAGE_URI__
+            kubectl -n microservices rollout status deployment/user-service
+            kubectl -n microservices get deploy user-service -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            ```
+            PR
+            sed -i "s|__IMAGE_URI__|${IMG}|g" pr_body.txt
             gh pr create \
               --repo "${INFRA_REPO}" \
               --title "chore: user-service image ${GITHUB_SHA}" \
-              --body "Update image to ${GITHUB_SHA}" \
+              --body-file pr_body.txt \
               --head "${BR}"
 
             gh workflow run gcp-deploy.yml -R ${INFRA_REPO} --ref main -f IMAGE_URI="${IMAGE_URI}"
