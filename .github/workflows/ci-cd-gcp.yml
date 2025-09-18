@@ -15,6 +15,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -60,16 +63,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ secrets.INFRA_REPO }}
+          REGION: ${{ env.REGION }}
+          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          REPO: ${{ env.REPO }}
+          IMAGE: ${{ env.IMAGE }}
         run: |
           set -e
-          git config --global user.email "guu119@naver.com"
-          git config --global user.name "koungq"
-          rm -rf infra && git clone https://github.com/${INFRA_REPO}.git infra
+          git config --global user.email "action@github.com"
+          git config --global user.name "github-actions"
+          # authenticated clone with GH_TOKEN
+          rm -rf infra && git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
           cd infra
-          BR=update-user-${{ github.sha }}
+          BR=update-user-${GITHUB_SHA}
           git checkout -b ${BR}
-          sed -i "s|image: .*user-service:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/user-service:${{ github.sha }}|g" k8s-gcp/user-service/deployment-gcp.yaml || true
+          sed -i "s|image: .*${IMAGE}:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}|g" k8s-gcp/user-service/deployment-gcp.yaml || true
           git add k8s-gcp/user-service/deployment-gcp.yaml || true
-          git commit -m "chore: user-service image ${{ github.sha }}" || exit 0
+          git commit -m "chore: user-service image ${GITHUB_SHA}" || exit 0
           git push -u origin ${BR}
+          echo "${GH_TOKEN}" | gh auth login --with-token
           gh pr create --title "chore: user-service image ${GITHUB_SHA}" --body "Update image to ${GITHUB_SHA}" --repo ${INFRA_REPO}
