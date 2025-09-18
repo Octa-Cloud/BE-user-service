@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# 동일 브랜치에서 중복 실행 막기 (선택)
+concurrency:
+  group: usersvc-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGION: asia-northeast3
   REPO: microservices
@@ -17,17 +22,12 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # (패키지/릴리스가 필요하면 packages: write 등 추가)
     steps:
       - uses: actions/checkout@v4
-
-      - name: Authenticate GitHub CLI (for PR/push)
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "${GH_TOKEN}" | gh auth login --with-token
-          git config --global user.email "guu119@naver.com"
-          git config --global user.name "koungq"
+        with:
+          # git remote에 기본 토큰 주입을 막아 push 시 우리가 지정한 토큰만 쓰도록
+          persist-credentials: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -62,33 +62,62 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
+          set -euo pipefail
           TAG=${{ github.sha }}
           IMAGE_URI=${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}
           docker build -t ${IMAGE_URI}:${TAG} -t ${IMAGE_URI}:latest .
           docker push ${IMAGE_URI}:${TAG}
           docker push ${IMAGE_URI}:latest
 
+      # infra repo에 이미지 태그 업데이트 PR 생성
       - name: Open PR to infra repo with new image tag
         if: github.ref == 'refs/heads/main'
         env:
+          # 여기서 GH_TOKEN은 PAT(또는 GITHUB_TOKEN)로 충분.
+          # 다른 조직/리포에 push한다면 PAT(repo, workflow 권한) 권장.
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          INFRA_REPO: ${{ secrets.INFRA_REPO }}
+          INFRA_REPO: ${{ secrets.INFRA_REPO }}   # e.g. org/infra-repo
           REGION: ${{ env.REGION }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           REPO: ${{ env.REPO }}
           IMAGE: ${{ env.IMAGE }}
         run: |
-          set -e
+          set -euo pipefail
           git config --global user.email "action@github.com"
           git config --global user.name "github-actions"
-          # authenticated clone with GH_TOKEN
-          rm -rf infra && git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
+
+          rm -rf infra
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
           cd infra
+
           BR=update-user-${GITHUB_SHA}
           git checkout -b ${BR}
-          sed -i "s|image: .*${IMAGE}:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}|g" k8s-gcp/user-service/deployment-gcp.yaml || true
-          git add k8s-gcp/user-service/deployment-gcp.yaml || true
-          git commit -m "chore: user-service image ${GITHUB_SHA}" || exit 0
+
+          TARGET="k8s-gcp/user-service/deployment-gcp.yaml"
+          if [ -f "${TARGET}" ]; then
+            sed -i "s|image: .*${IMAGE}:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}|g" "${TARGET}"
+            git add "${TARGET}"
+          else
+            echo "::warning::${TARGET} 파일을 찾을 수 없어 변경을 건너뜁니다."
+          fi
+
+          # 변경이 없으면 조용히 종료
+          if git diff --cached --quiet; then
+            echo "No changes to commit. Skipping PR."
+            exit 0
+          fi
+
+          git commit -m "chore: user-service image ${GITHUB_SHA}"
           git push -u origin ${BR}
-          echo "${GH_TOKEN}" | gh auth login --with-token
-          gh pr create --title "chore: user-service image ${GITHUB_SHA}" --body "Update image to ${GITHUB_SHA}" --repo ${INFRA_REPO}
+
+          # gh는 환경변수 GH_TOKEN을 자동 사용. gh auth login 불필요.
+          # 중복 PR 방지: 동일 head 브랜치로 열린 PR이 있으면 생성하지 않음
+          if gh pr list --repo "${INFRA_REPO}" --head "${BR}" --json number --jq 'length' | grep -q '^0$'; then
+            gh pr create \
+              --repo "${INFRA_REPO}" \
+              --title "chore: user-service image ${GITHUB_SHA}" \
+              --body "Update image to ${GITHUB_SHA}" \
+              --head "${BR}"
+          else
+            echo "PR already exists for branch ${BR}. Skipping create."
+          fi
