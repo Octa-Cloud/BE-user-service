@@ -62,8 +62,8 @@ jobs:
           INFRA_REPO: ${{ secrets.INFRA_REPO }}
         run: |
           set -e
-          git config --global user.email "action@github.com"
-          git config --global user.name "github-actions"
+          git config --global user.email "guu119@naver.com"
+          git config --global user.name "koungq"
           rm -rf infra && git clone https://github.com/${INFRA_REPO}.git infra
           cd infra
           BR=update-user-${{ github.sha }}
