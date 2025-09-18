@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # H2 Database (테스트용)
+  h2:
+    image: oscarfonts/h2:latest
+    container_name: user-service-h2-test
+    ports:
+      - "8082:8082"
+    environment:
+      H2_OPTIONS: "-web -webAllowOthers -webPort 8082"
+    networks:
+      - test-network
+
+  # Redis (테스트용)
+  redis-test:
+    image: redis:7-alpine
+    container_name: user-service-redis-test
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-test-data:/data
+    networks:
+      - test-network
+
+  # MailHog (SMTP 테스트용)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: user-service-mailhog-test
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - test-network
+
+  # Kafka (테스트용)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: user-service-zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - test-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: user-service-kafka-test
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - test-network
+
+  # MongoDB (테스트용)
+  mongodb-test:
+    image: mongo:7
+    container_name: user-service-mongodb-test
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: user_db_test
+    volumes:
+      - mongodb-test-data:/data/db
+    networks:
+      - test-network
+
+volumes:
+  redis-test-data:
+  mongodb-test-data:
+
+networks:
+  test-network:
+    driver: bridge

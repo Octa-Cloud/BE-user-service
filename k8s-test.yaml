@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: user-service-test
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-secrets
+  namespace: user-service-test
+type: Opaque
+data:
+  jwt-secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktdmVyeS1sb25nLWtleS0xMjM0NTY3ODk=  # base64 encoded test secret
+  smtp-username: dGVzdA==  # base64 encoded 'test'
+  smtp-password: dGVzdA==  # base64 encoded 'test'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-config
+  namespace: user-service-test
+data:
+  SPRING_PROFILES_ACTIVE: "test"
+  RDB_URL: "jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
+  RDB_USERNAME: "sa"
+  RDB_PASSWORD: ""
+  REDIS_HOST: "redis-test-service"
+  REDIS_PORT: "6379"
+  MONGODB_URI: "mongodb://admin:password@mongodb-test-service:27017/user_db_test?authSource=admin"
+  JWT_SECRET: "test-secret-key-for-testing-only-very-long-key-123456789"
+  SMTP_HOST: "mailhog-service"
+  SMTP_PORT: "1025"
+  SMTP_USERNAME: "test"
+  SMTP_PASSWORD: "test"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-test
+  namespace: user-service-test
+  labels:
+    app: user-service-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service-test
+  template:
+    metadata:
+      labels:
+        app: user-service-test
+    spec:
+      containers:
+      - name: user-service
+        image: user-service:test
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: RDB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: RDB_URL
+        - name: RDB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: RDB_USERNAME
+        - name: RDB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: RDB_PASSWORD
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: REDIS_PORT
+        - name: MONGODB_URI
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: MONGODB_URI
+        - name: JWT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: JWT_SECRET
+        - name: SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: SMTP_PORT
+        - name: SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: test-secrets
+              key: smtp-username
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: test-secrets
+              key: smtp-password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /v3/api-docs
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /v3/api-docs
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service-test
+  namespace: user-service-test
+spec:
+  selector:
+    app: user-service-test
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+# Redis 테스트 서비스
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-test
+  namespace: user-service-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-test
+  template:
+    metadata:
+      labels:
+        app: redis-test
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-test-service
+  namespace: user-service-test
+spec:
+  selector:
+    app: redis-test
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+# MongoDB 테스트 서비스
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-test
+  namespace: user-service-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-test
+  template:
+    metadata:
+      labels:
+        app: mongodb-test
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "admin"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: "password"
+        - name: MONGO_INITDB_DATABASE
+          value: "user_db_test"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-test-service
+  namespace: user-service-test
+spec:
+  selector:
+    app: mongodb-test
+  ports:
+  - port: 27017
+    targetPort: 27017
+---
+# MailHog 테스트 서비스
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog-test
+  namespace: user-service-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailhog-test
+  template:
+    metadata:
+      labels:
+        app: mailhog-test
+    spec:
+      containers:
+      - name: mailhog
+        image: mailhog/mailhog:latest
+        ports:
+        - containerPort: 1025  # SMTP
+        - containerPort: 8025  # Web UI
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailhog-service
+  namespace: user-service-test
+spec:
+  selector:
+    app: mailhog-test
+  ports:
+  - name: smtp
+    port: 1025
+    targetPort: 1025
+  - name: web
+    port: 8025
+    targetPort: 8025
