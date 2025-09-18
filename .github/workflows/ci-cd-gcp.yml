@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
       pull-requests: write
       # (패키지/릴리스가 필요하면 packages: write 등 추가)
     steps:
