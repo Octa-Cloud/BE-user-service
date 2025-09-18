@@ -10,16 +10,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-//@RestController
-//@RequiredArgsConstructor
-//public class LoginController implements LoginApiSpec {
-//
-//    private final LoginUseCase loginUseCase;
-//
-//    @Override
-//    public BaseResponse<LoginResponse> login(
-//            @RequestBody @Valid LoginRequest request
-//    ) {
-//        return BaseResponse.onSuccess(loginUseCase.execute(request));
-//    }
-//}
+@RestController
+@RequiredArgsConstructor
+public class LoginController implements LoginApiSpec {
+
+    private final LoginUseCase loginUseCase;
+
+    @Override
+    public BaseResponse<LoginResponse> login(
+            @RequestBody @Valid LoginRequest request
+    ) {
+        return BaseResponse.onSuccess(loginUseCase.execute(request));
+    }
+}
