@@ -7,7 +7,6 @@ on:
     branches: [ main ]
 
 env:
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: asia-northeast3
   REPO: microservices
   IMAGE: user-service
@@ -51,6 +50,8 @@ jobs:
         run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
       - name: Build and push image
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
           TAG=${{ github.sha }}
           IMAGE_URI=${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}
@@ -64,7 +65,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ secrets.INFRA_REPO }}
           REGION: ${{ env.REGION }}
-          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           REPO: ${{ env.REPO }}
           IMAGE: ${{ env.IMAGE }}
         run: |
