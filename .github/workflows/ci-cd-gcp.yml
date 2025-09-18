@@ -97,7 +97,7 @@ jobs:
           BR=update-user-${GITHUB_SHA}
           git checkout -b ${BR}
 
-          TARGET="k8s-gcp/user-service/deployment-gcp.yaml"
+          TARGET="infrastructure/k8s-gcp/user-service/deployment-gcp.yaml"
           if [ -f "${TARGET}" ]; then
             sed -i "s|image: .*${IMAGE}:.*|image: ${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}|g" "${TARGET}"
             git add "${TARGET}"
@@ -118,16 +118,16 @@ jobs:
           # 중복 PR 방지: 동일 head 브랜치로 열린 PR이 있으면 생성하지 않음
           if gh pr list --repo "${INFRA_REPO}" --head "${BR}" --json number --jq 'length' | grep -q '^0$'; then
             IMG="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}:${GITHUB_SHA}"
-            cat > pr_body.txt <<'PR'
-            Update image to ${GITHUB_SHA}
-
-            Apply directly if needed:
-            ```
-            kubectl -n microservices set image deployment/user-service user-service=__IMAGE_URI__
-            kubectl -n microservices rollout status deployment/user-service
-            kubectl -n microservices get deploy user-service -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
-            ```
-            PR
+            printf "%s\n" \
+              "Update image to ${GITHUB_SHA}" \
+              "" \
+              "Apply directly if needed:" \
+              "```" \
+              "kubectl -n microservices set image deployment/user-service user-service=asia-northeast3-docker.pkg.dev/mong-gcp/microservices/user-service:__IMAGE_URI__" \
+              "kubectl -n microservices rollout status deployment/user-service" \
+              "kubectl -n microservices get deploy user-service -o jsonpath='{.spec.template.spec.containers[0].image}{\"\\n\"}'" \
+              "```" \
+              > pr_body.txt
             sed -i "s|__IMAGE_URI__|${IMG}|g" pr_body.txt
             gh pr create \
               --repo "${INFRA_REPO}" \
@@ -139,3 +139,15 @@ jobs:
           else
             echo "PR already exists for branch ${BR}. Skipping create."
           fi
+
+      - name: Dispatch infra deploy (always)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          INFRA_REPO: ${{ secrets.INFRA_REPO }}
+          IMAGE_URI: ${{ env.IMAGE_URI }}
+        run: |
+          set -euo pipefail
+          echo "${GH_TOKEN}" | gh auth login --with-token
+          echo "Dispatching gcp-deploy with IMAGE_URI=${IMAGE_URI}"
+          gh workflow run gcp-deploy.yml -R ${INFRA_REPO} --ref main -f IMAGE_URI="${IMAGE_URI}"
