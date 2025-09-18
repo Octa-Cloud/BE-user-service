@@ -21,9 +21,9 @@ metadata:
   namespace: user-service-test
 data:
   SPRING_PROFILES_ACTIVE: "test"
-  RDB_URL: "jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
-  RDB_USERNAME: "sa"
-  RDB_PASSWORD: ""
+  RDB_URL: "jdbc:mysql://mysql-test-service:3306/user_db_test?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+  RDB_USERNAME: "testuser"
+  RDB_PASSWORD: "testpassword"
   REDIS_HOST: "redis-test-service"
   REDIS_PORT: "6379"
   MONGODB_URI: "mongodb://admin:password@mongodb-test-service:27017/user_db_test?authSource=admin"
@@ -153,6 +153,63 @@ spec:
     port: 8080
     targetPort: 8080
   type: ClusterIP
+---
+# MySQL 테스트 서비스
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-test
+  namespace: user-service-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-test
+  template:
+    metadata:
+      labels:
+        app: mysql-test
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "testpassword"
+        - name: MYSQL_DATABASE
+          value: "user_db_test"
+        - name: MYSQL_USER
+          value: "testuser"
+        - name: MYSQL_PASSWORD
+          value: "testpassword"
+        command: ["--default-authentication-plugin=mysql_native_password"]
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-test-service
+  namespace: user-service-test
+spec:
+  selector:
+    app: mysql-test
+  ports:
+  - port: 3306
+    targetPort: 3306
 ---
 # Redis 테스트 서비스
 apiVersion: apps/v1

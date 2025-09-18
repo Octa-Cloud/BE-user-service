@@ -3,9 +3,9 @@ spring:
     active: test
   
   datasource:
-    username: ${RDB_USERNAME}
-    url: ${RDB_URL}
-    password: ${RDB_PASSWORD}
+    username: testuser
+    url: jdbc:mysql://localhost:3306/user_db_test?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    password: testpassword
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5

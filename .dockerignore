@@ -1,30 +1,70 @@
-# Gradle
-.gradle/
-build/
-!build/libs/
-!build/libs/*.jar
+# Git
+.git
+.gitignore
 
 # IDE
-.idea/
+.idea
+.vscode
 *.iml
-.vscode/
-*.swp
-*.swo
+*.ipr
+*.iws
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Git
-.git/
-.gitignore
+# Build artifacts
+build/
+target/
+out/
+*.jar
+*.war
+*.ear
+
+# Dependencies
+node_modules/
 
 # Logs
 *.log
+logs/
 
-# Test
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Test files
 src/test/
 
 # Documentation
 README.md
-HELP.md
+*.md
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+k8s*.yaml
+*.yaml
+*.yml
+
+# Scripts
+*.sh
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.gradle/
+.m2/

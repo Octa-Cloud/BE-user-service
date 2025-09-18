@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# User Service 테스트 실행 스크립트
+# User Service MySQL 테스트 실행 스크립트
 
 set -e
 
-echo "🚀 User Service 테스트 시작..."
+echo "🚀 User Service MySQL 테스트 시작..."
 
 # 색상 정의
 RED='\033[0;31m'
@@ -46,9 +46,9 @@ until docker exec user-service-mysql-test mysqladmin ping -h localhost -u testus
 done
 print_success "MySQL 연결 완료"
 
-# 2. 단위 테스트 실행
-print_step "단위 테스트 실행..."
-./gradlew test --tests "com.project.user.*" --info
+# 2. 단위 테스트 실행 (MySQL 프로필 사용)
+print_step "단위 테스트 실행 (MySQL)..."
+./gradlew test --tests "com.project.user.*" --info -Dspring.profiles.active=test-mysql
 
 if [ $? -eq 0 ]; then
     print_success "단위 테스트 통과"
@@ -59,7 +59,7 @@ fi
 
 # 3. 통합 테스트 실행
 print_step "통합 테스트 실행..."
-./gradlew test --tests "com.project.user.integration.*" --info
+./gradlew test --tests "com.project.user.integration.*" --info -Dspring.profiles.active=test-mysql
 
 if [ $? -eq 0 ]; then
     print_success "통합 테스트 통과"
@@ -70,7 +70,7 @@ fi
 
 # 4. 컨트롤러 테스트 실행
 print_step "컨트롤러 테스트 실행..."
-./gradlew test --tests "com.project.user.controller.*" --info
+./gradlew test --tests "com.project.user.controller.*" --info -Dspring.profiles.active=test-mysql
 
 if [ $? -eq 0 ]; then
     print_success "컨트롤러 테스트 통과"
@@ -95,5 +95,6 @@ echo "📊 테스트 결과 요약:"
 echo "- 단위 테스트: ✅ 통과"
 echo "- 통합 테스트: ✅ 통과" 
 echo "- 컨트롤러 테스트: ✅ 통과"
+echo "- 데이터베이스: MySQL 8.0"
 echo "- 리포트: build/reports/tests/test/index.html"
 echo "- 커버리지: build/reports/jacoco/test/html/index.html"

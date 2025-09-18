@@ -1,14 +1,20 @@
 version: '3.8'
 
 services:
-  # H2 Database (테스트용)
-  h2:
-    image: oscarfonts/h2:latest
-    container_name: user-service-h2-test
+  # MySQL Database (테스트용)
+  mysql-test:
+    image: mysql:8.0
+    container_name: user-service-mysql-test
     ports:
-      - "8082:8082"
+      - "3306:3306"
     environment:
-      H2_OPTIONS: "-web -webAllowOthers -webPort 8082"
+      MYSQL_ROOT_PASSWORD: testpassword
+      MYSQL_DATABASE: user_db_test
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpassword
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-test-data:/var/lib/mysql
     networks:
       - test-network
 
@@ -76,6 +82,7 @@ services:
       - test-network
 
 volumes:
+  mysql-test-data:
   redis-test-data:
   mongodb-test-data:
 
