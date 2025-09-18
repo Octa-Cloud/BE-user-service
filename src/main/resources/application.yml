@@ -1,6 +1,17 @@
+server:
+  port: 8080
+
 spring:
-  profiles:
-    active: dev
+  datasource:
+    username: ${RDB_USERNAME}
+    url: ${RDB_URL}
+    password: ${RDB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
   jpa:
     hibernate:
@@ -42,6 +53,8 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /webjars
       method: GET
+    - path-pattern: /actuator/health/**
+      method: GET
 
 exclude-blacklist-path-patterns:
   paths:
@@ -64,6 +77,8 @@ exclude-blacklist-path-patterns:
     - path-pattern: /v3/api-docs/swagger-config
       method: GET
     - path-pattern: /webjars
+      method: GET
+    - path-pattern: /actuator/health/**
       method: GET
 
 exclude-whitelist-path-patterns:
@@ -92,4 +107,36 @@ exclude-whitelist-path-patterns:
       method: GET
     - path-pattern: /webjars
       method: GET
+    - path-pattern: /actuator/health/**
+      method: GET
 
+jwt-properties:
+  key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
+  access-token-expiration-period-day: 1
+  access-token-subject: AccessToken
+  refresh-token-expiration-period-day: 30
+  refresh-token-subject: RefreshToken
+  token-header: Authorization
+  bearer: Bearer
+  id: id
+
+logging:
+  level:
+    root: INFO
+    org.springframework: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.boot: DEBUG
+    com.project.user: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    groups-order: DESC
+    tags-sorter: alpha
+    operations-sorter: method
+    enabled: true
+  paths-to-match:
+    - /api/**

@@ -10,7 +10,8 @@ COPY src/ src/
 RUN gradle build --no-daemon -x test
 
 # Runtime stage
-FROM openjdk:17-jre-slim
+# openjdk:jre 이미지는 더 이상 제공되지 않아 eclipse-temurin 기반 JRE 이미지를 사용합니다.
+FROM eclipse-temurin:17-jre-jammy
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
@@ -44,4 +45,4 @@ ENTRYPOINT ["java", \
     "-XX:+UseG1GC", \
     "-XX:+UseStringDeduplication", \
     "-Djava.security.egd=file:/dev/./urandom", \
-    "-jar", "/app.jar"]
+    "-jar", "app.jar"]

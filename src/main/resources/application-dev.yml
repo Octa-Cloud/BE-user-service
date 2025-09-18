@@ -3,16 +3,112 @@ server:
 
 spring:
   datasource:
-    username: ${RDB_USERNAME:root}
-    url: ${RDB_URL:RDB_URL=jdbc:mysql://localhost:3306/mong?useSSL\=false&serverTimezone\=Asia/Seoul&characterEncoding\=UTF-8}
-    password: ${RDB_PASSWORD:}
+    username: ${RDB_USERNAME}
+    url: ${RDB_URL}
+    password: ${RDB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   data:
     redis:
-      host: localhost
-      port: 6379
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/mong}
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.timeout: 5000
+
+
+exclude-auth-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - path-pattern: /api/users/login
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+    - path-pattern: /actuator/health/**
+      method: GET
+
+exclude-blacklist-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - path-pattern: /api/users/login
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+    - path-pattern: /actuator/health/**
+      method: GET
+
+exclude-whitelist-path-patterns:
+  paths:
+    - path-pattern: /api/users/sign-up
+      method: POST
+    - pathPattern: /api/users/login
+      method: POST
+    - path-pattern: /api/users/logout
+      method: DELETE
+    - path-pattern: /api/token/reissue
+      method: POST
+    - path-pattern: /api/email/send
+      method: POST
+    - path-pattern: /api/email/verify
+      method: POST
+    - path-pattern: /swagger-ui.html
+      method: GET
+    - path-pattern: /swagger-ui/index.html
+      method: GET
+    - path-pattern: /swagger-ui/**
+      method: GET
+    - path-pattern: /v3/api-docs
+      method: GET
+    - path-pattern: /v3/api-docs/swagger-config
+      method: GET
+    - path-pattern: /webjars
+      method: GET
+    - path-pattern: /actuator/health/**
+      method: GET
 
 jwt-properties:
   key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
@@ -23,6 +119,16 @@ jwt-properties:
   token-header: Authorization
   bearer: Bearer
   id: id
+
+logging:
+  level:
+    root: INFO
+    org.springframework: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.boot: DEBUG
+    com.project.user: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
 
 springdoc:
   api-docs:
