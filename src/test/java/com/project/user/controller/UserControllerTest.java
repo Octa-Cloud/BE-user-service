@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureWebMvc
-@ActiveProfiles("test-mysql")
+@ActiveProfiles("test")
 class UserControllerTest {
 
     @Autowired
