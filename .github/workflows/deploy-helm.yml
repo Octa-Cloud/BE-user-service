@@ -152,6 +152,7 @@ jobs:
         env:
           INFRA_REPO: ${{ env.INFRA_REPO }}
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for image ${TAG}"
@@ -198,6 +199,7 @@ jobs:
         env:
           INFRA_REPO: ${{ env.INFRA_REPO }}
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for production with image ${TAG}"
