@@ -7,7 +7,7 @@ import com.project.user.domain.ui.spec.LoginApiSpec;
 import com.project.user.global.common.BaseResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RequestBody;
+//import org.springframework.web.bind.annotation.RequestBody;
 //import org.springframework.web.bind.annotation.RestController;
 
 //@RestController
