@@ -76,7 +76,7 @@ jobs:
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
         run: |
           set -euo pipefail
-          echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+          echo "${DOCKERHUB_TOKEN}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
           docker tag "${{ env.IMAGE_URI }}" "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
           docker push "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
 
