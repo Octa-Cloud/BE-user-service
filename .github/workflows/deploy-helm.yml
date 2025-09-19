@@ -129,12 +129,13 @@ jobs:
         env:
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -euo pipefail
           echo "Updating ArgoCD Application with new image tag: ${TAG}"
           
           # Clone infrastructure repository using Personal Access Token
-          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${INFRA_REPO}.git infra
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
           cd infra
           
           # Update ArgoCD Application with new image tag
@@ -174,12 +175,13 @@ jobs:
         env:
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -euo pipefail
           echo "Updating ArgoCD Application for production with image tag: ${TAG}"
           
           # Clone infrastructure repository using Personal Access Token
-          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${INFRA_REPO}.git infra
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
           cd infra
           
           # Update ArgoCD Application with new image tag
