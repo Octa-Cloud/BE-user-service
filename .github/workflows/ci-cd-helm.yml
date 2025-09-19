@@ -127,6 +127,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -135,14 +136,13 @@ jobs:
       - name: Update ArgoCD Application with new image tag
         env:
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
         run: |
           set -euo pipefail
           echo "Updating ArgoCD Application with new image tag: ${TAG}"
           
-          # Clone infrastructure repository
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
+          # Clone infrastructure repository using GITHUB_TOKEN
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${INFRA_REPO}.git infra
           cd infra
           
           # Update ArgoCD Application with new image tag
@@ -157,13 +157,12 @@ jobs:
 
       - name: Trigger ArgoCD sync
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for image ${TAG}"
-          echo "${GH_TOKEN}" | gh auth login --with-token
+          # Use GitHub CLI with token from environment
           gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}"
 
   deploy-prod:
@@ -173,6 +172,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -181,14 +181,13 @@ jobs:
       - name: Update ArgoCD Application for production
         env:
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
         run: |
           set -euo pipefail
           echo "Updating ArgoCD Application for production with image tag: ${TAG}"
           
-          # Clone infrastructure repository
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
+          # Clone infrastructure repository using GITHUB_TOKEN
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${INFRA_REPO}.git infra
           cd infra
           
           # Update ArgoCD Application with new image tag
@@ -203,11 +202,10 @@ jobs:
 
       - name: Trigger ArgoCD sync for production
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           INFRA_REPO: ${{ env.INFRA_REPO }}
           TAG: ${{ github.event.inputs.image_tag || github.sha }}
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for production with image ${TAG}"
-          echo "${GH_TOKEN}" | gh auth login --with-token
+          # Use GitHub CLI with token from environment
           gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}" -f ENVIRONMENT="prod"
