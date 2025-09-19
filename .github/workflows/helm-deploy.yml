@@ -1,0 +1,118 @@
+name: Helm Deploy to ArgoCD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        type: string
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-northeast3
+  REPO: microservices
+  IMAGE: user-service
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Build
+        run: ./gradlew build -x test
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+      - name: Build and push image to Artifact Registry
+        env:
+          TAG: ${{ github.event.inputs.image_tag || github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE_URI=${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}
+          docker build -t ${IMAGE_URI}:${TAG} -t ${IMAGE_URI}:latest .
+          docker push ${IMAGE_URI}:${TAG}
+          docker push ${IMAGE_URI}:latest
+          echo "IMAGE_URI=${IMAGE_URI}:${TAG}" >> $GITHUB_ENV
+
+      - name: Push image to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.image_tag || github.sha }}
+        run: |
+          set -euo pipefail
+          echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+          docker tag "${{ env.IMAGE_URI }}" "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
+          docker push "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
+
+      - name: Update ArgoCD Application with new image tag
+        env:
+          TAG: ${{ github.event.inputs.image_tag || github.sha }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          INFRA_REPO: ${{ secrets.INFRA_REPO }}
+        run: |
+          set -euo pipefail
+          echo "Updating ArgoCD Application with new image tag: ${TAG}"
+          
+          # Clone infrastructure repository
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
+          cd infra
+          
+          # Update ArgoCD Application with new image tag
+          sed -i "s|value: latest|value: ${TAG}|g" k8s-gcp/argocd/user-service-dev-app.yaml
+          sed -i "s|value: latest|value: ${TAG}|g" k8s-gcp/argocd/user-service-prod-app.yaml
+          
+          # Commit and push changes
+          git config --global user.email "action@github.com"
+          git config --global user.name "github-actions"
+          git add k8s-gcp/argocd/user-service-*-app.yaml
+          git commit -m "chore: update user-service image tag to ${TAG}" || exit 0
+          git push
+
+      - name: Trigger ArgoCD sync
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          INFRA_REPO: ${{ secrets.INFRA_REPO }}
+          TAG: ${{ github.event.inputs.image_tag || github.sha }}
+        run: |
+          set -euo pipefail
+          echo "Triggering ArgoCD sync for image ${TAG}"
+          echo "${GH_TOKEN}" | gh auth login --with-token
+          
+          # Trigger ArgoCD application sync via GitHub Actions
+          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}"
