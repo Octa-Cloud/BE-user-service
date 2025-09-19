@@ -1,12 +1,15 @@
+server:
+  port: 8080
+
 spring:
   profiles:
     active: test
   
   datasource:
-    username: sa
-    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    password: 
-    driver-class-name: org.h2.Driver
+    username: ${RDB_USERNAME:sa}
+    url: ${RDB_URL:jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    password: ${RDB_PASSWORD:}
+    driver-class-name: ${RDB_DRIVER:org.h2.Driver}
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
@@ -14,18 +17,34 @@ spring:
       idle-timeout: 300000
       max-lifetime: 1200000
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    database: h2
-    database-platform: org.hibernate.dialect.H2Dialect
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+    database: ${JPA_DATABASE:h2}
+    database-platform: ${JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
 
-  # 테스트에서는 외부 의존성 비활성화
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:test@example.com}
+    password: ${SMTP_PASSWORD:testpassword}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      mail.smtp.timeout: 5000
+
+  # 테스트에서는 일부 외부 의존성 비활성화 (환경변수로 제어)
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
@@ -36,13 +55,16 @@ spring:
       - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
 
-# JWT 설정
-jwt:
-  secret: test-secret-key-for-testing-only-very-long-key-123456789
-  access-token:
-    expire-time: 1800000  # 30분
-  refresh-token:
-    expire-time: 1209600000  # 14일
+# JWT 설정 (메인과 동일한 구조)
+jwt-properties:
+  key: ${JWT_KEY:test-secret-key-for-testing-only-very-long-key-123456789}
+  access-token-expiration-period-day: ${JWT_ACCESS_EXPIRATION:1}
+  access-token-subject: AccessToken
+  refresh-token-expiration-period-day: ${JWT_REFRESH_EXPIRATION:30}
+  refresh-token-subject: RefreshToken
+  token-header: Authorization
+  bearer: Bearer
+  id: id
 
 # 로깅 설정
 logging:
