@@ -77,7 +77,3 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
-
-bootRun {
-    args = ['--spring.profiles.active=local']
-}
