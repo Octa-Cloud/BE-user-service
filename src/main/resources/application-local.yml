@@ -1,0 +1,51 @@
+spring:
+  profiles:
+    active: local
+  
+  datasource:
+    username: root
+    url: jdbc:mysql://localhost:3306/mong?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    password: rlarudrb119
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: mong.health@gmail.com
+    password: eynexfrufjykutlw
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.timeout: 5000
+
+jwt-properties:
+  key: KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==
+  access-token-expiration-period-day: 1
+  access-token-subject: AccessToken
+  refresh-token-expiration-period-day: 30
+  refresh-token-subject: RefreshToken
+  token-header: Authorization
+  bearer: Bearer
+  id: id
+
+logging:
+  level:
+    root: INFO
+    org.springframework: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.boot: DEBUG
+    com.project.user: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
