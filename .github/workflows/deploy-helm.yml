@@ -156,8 +156,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for image ${TAG}"
-          # Use GitHub CLI with token from environment
-          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}" --token ${GH_TOKEN}
+          # GitHub CLI will automatically use GH_TOKEN environment variable
+          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}"
 
   deploy-prod:
     needs: [build-and-push, deploy-dev]
@@ -203,5 +203,5 @@ jobs:
         run: |
           set -euo pipefail
           echo "Triggering ArgoCD sync for production with image ${TAG}"
-          # Use GitHub CLI with token from environment
-          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}" --token ${GH_TOKEN} -f ENVIRONMENT="prod"
+          # GitHub CLI will automatically use GH_TOKEN environment variable
+          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}" -f ENVIRONMENT="prod"
