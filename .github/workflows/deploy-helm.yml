@@ -3,7 +3,7 @@ name: User-Service Image Build
 env:
   SERVICE_NAME: user-service
   BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
-  HELM_VALUE: user-service-chart/values.yaml
+  HELM_VALUE: user-service/values.yaml
   HELM_BRANCH: main
   INFRA_REPO: ${{ secrets.INFRA_REPO }}
 
