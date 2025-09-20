@@ -1,7 +1,7 @@
 package com.project.user.domain.ui;
 
 import com.project.user.domain.application.dto.request.LoginRequest;
-//import com.project.user.domain.application.dto.response.LoginResponse;
+import com.project.user.domain.application.dto.response.LoginResponse;
 //import com.project.user.domain.application.usecase.LoginUseCase;
 //import com.project.user.domain.ui.spec.LoginApiSpec;
 //import com.project.user.global.common.BaseResponse;
