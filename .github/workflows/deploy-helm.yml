@@ -5,14 +5,17 @@ env:
   BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
   HELM_VALUE: helm-charts/user-service/values.yaml
   HELM_BRANCH: main
-  INFRA_REPO: YOUR-ORG/Infra-helm-charts  # 실제 리포지토리명으로 변경 필요
+  INFRA_REPO: ${{ secrets.INFRA_REPO }}
 
 on:
   push:
     branches:
       - 'main'
     paths:
-      - 'user-service/**'
+      - 'src/**'
+      - 'build.gradle'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-helm.yml'
 
 jobs:
   build:
@@ -40,10 +43,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
         run: |
-          cd ${{ env.SERVICE_NAME }}
           docker build -f ./Dockerfile -t $IMAGE_TAG .
           docker push $IMAGE_TAG
-          cd ..
 
       - name: Checkout Helm Repository
         uses: actions/checkout@v4
