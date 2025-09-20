@@ -33,14 +33,14 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Configure Artifact Registry Authentication
-        run: gcloud auth configure-docker ${{ secrets.GCP_REGION || 'asia-northeast3' }}-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
 
       - name: Build Spring Boot Application
         run: ./gradlew clean build
 
       - name: Build and push image to Artifact Registry
         env:
-          IMAGE_TAG: ${{ secrets.GCP_REGION || 'asia-northeast3' }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
+          IMAGE_TAG: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
         run: |
           docker build -f ./Dockerfile -t $IMAGE_TAG .
           docker push $IMAGE_TAG
