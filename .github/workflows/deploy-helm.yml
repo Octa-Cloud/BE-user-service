@@ -1,207 +1,87 @@
-name: User Service CI/CD (Helm + ArgoCD)
+name: User-Service Image Build
+
+env:
+  SERVICE_NAME: user-service
+  BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
+  HELM_VALUE: helm-charts/user-service/values.yaml
+  HELM_BRANCH: main
+  INFRA_REPO: YOUR-ORG/Infra-helm-charts  # 실제 리포지토리명으로 변경 필요
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Docker image tag to deploy'
-        required: false
-        type: string
-
-# 동일 브랜치에서 중복 실행 막기
-concurrency:
-  group: usersvc-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: asia-northeast3
-  REPO: microservices
-  IMAGE: user-service
-  INFRA_REPO: ${{ secrets.INFRA_REPO }}
+    branches:
+      - 'main'
+    paths:
+      - 'user-service/**'
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the repository
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-      - name: Run tests
-        run: ./gradlew test
-
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-      pull-requests: write
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-      - name: Build
-        run: ./gradlew build -x test
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Google Cloud Auth
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
-      - name: Configure Docker auth for Artifact Registry
-        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+      - name: Configure Docker Authentication
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
 
-      - name: Build and push image to Artifact Registry
+      - name: Build Spring Boot Application
+        working-directory: ./${{ env.SERVICE_NAME }}
+        run: ./gradlew clean build
+
+      - name: Build, tag, and push docker image
         env:
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
+          IMAGE_TAG: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
         run: |
-          set -euo pipefail
-          IMAGE_URI=${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${IMAGE}
-          docker build -t ${IMAGE_URI}:${TAG} -t ${IMAGE_URI}:latest .
-          docker push ${IMAGE_URI}:${TAG}
-          docker push ${IMAGE_URI}:latest
-          echo "IMAGE_URI=${IMAGE_URI}:${TAG}" >> $GITHUB_ENV
+          cd ${{ env.SERVICE_NAME }}
+          docker build -f ./Dockerfile -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+          cd ..
 
-      - name: Push image to Docker Hub
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
-        run: |
-          set -euo pipefail
-          echo "${DOCKERHUB_TOKEN}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
-          docker tag "${{ env.IMAGE_URI }}" "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
-          docker push "docker.io/${DOCKERHUB_USERNAME}/${IMAGE}:${TAG}"
-
-  deploy-dev:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-      actions: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Helm Repository
+        uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          repository: ${{ env.INFRA_REPO }}
+          path: helm-chart
+          ref: ${{ env.HELM_BRANCH }}
+          token: ${{ secrets.GH_PAT }}
 
-      - name: Update ArgoCD Application with new image tag
-        env:
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          INFRA_REPO: ${{ env.INFRA_REPO }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "Updating ArgoCD Application with new image tag: ${TAG}"
-          
-          # Clone infrastructure repository using Personal Access Token
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
-          cd infra
-          
-          # Update ArgoCD Application with new image tag
-          sed -i "s|value: latest|value: ${TAG}|g" k8s-gcp/argocd/user-service-dev-app.yaml
-          
-          # Commit and push changes
-          git config --global user.email "action@github.com"
-          git config --global user.name "github-actions"
-          git add k8s-gcp/argocd/user-service-dev-app.yaml
-          git commit -m "chore: update user-service-dev image tag to ${TAG}" || exit 0
-          git push
-
-      - name: Trigger ArgoCD sync
-        env:
-          INFRA_REPO: ${{ env.INFRA_REPO }}
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "Triggering ArgoCD sync for image ${TAG}"
-          # GitHub CLI will automatically use GH_TOKEN environment variable
-          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}"
-
-  deploy-prod:
-    needs: [build-and-push, deploy-dev]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
-    permissions:
-      contents: write
-      actions: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
+      - name: Change Image tag of the Helm Chart
+        uses: mikefarah/yq@v4.34.1
         with:
-          persist-credentials: false
+          cmd: yq -i '.image.tag = "${{ env.BUILD_ID }}"' helm-chart/${{ env.HELM_VALUE }}
 
-      - name: Update ArgoCD Application for production
-        env:
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          INFRA_REPO: ${{ env.INFRA_REPO }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Commit and Push Helm Chart Changes
         run: |
-          set -euo pipefail
-          echo "Updating ArgoCD Application for production with image tag: ${TAG}"
+          cd helm-chart
+          git config --local user.email "githubaction@gmail.com"
+          git config --local user.name "githubaction"
+          git add ${{ env.HELM_VALUE }}
+          git commit -m "Update ${SERVICE_NAME} image tag to ${{ env.BUILD_ID }}" || echo "No changes to commit"
           
-          # Clone infrastructure repository using Personal Access Token
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git infra
-          cd infra
+          # Push with retry logic
+          attempts=0
+          max_attempts=3
           
-          # Update ArgoCD Application with new image tag
-          sed -i "s|value: latest|value: ${TAG}|g" k8s-gcp/argocd/user-service-prod-app.yaml
-          
-          # Commit and push changes
-          git config --global user.email "action@github.com"
-          git config --global user.name "github-actions"
-          git add k8s-gcp/argocd/user-service-prod-app.yaml
-          git commit -m "chore: update user-service-prod image tag to ${TAG}" || exit 0
-          git push
-
-      - name: Trigger ArgoCD sync for production
-        env:
-          INFRA_REPO: ${{ env.INFRA_REPO }}
-          TAG: ${{ github.event.inputs.image_tag || github.sha }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "Triggering ArgoCD sync for production with image ${TAG}"
-          # GitHub CLI will automatically use GH_TOKEN environment variable
-          gh workflow run argocd-sync.yml -R ${INFRA_REPO} --ref main -f IMAGE_TAG="${TAG}" -f ENVIRONMENT="prod"
+          while [ $attempts -lt $max_attempts ]; do
+            if git push origin ${{ env.HELM_BRANCH }}; then
+              echo "Push successful!"
+              break
+            else
+              echo "Push failed. Attempting rebase with remote branch."
+              git pull --rebase origin ${{ env.HELM_BRANCH }}
+              attempts=$((attempts+1))
+              if [ $attempts -eq $max_attempts ]; then
+                echo "Push failed after $max_attempts attempts"
+                exit 1
+              fi
+              echo "Retrying push..."
+            fi
+          done
