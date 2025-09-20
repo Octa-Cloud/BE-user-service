@@ -56,7 +56,7 @@ jobs:
       - name: Change Image tag of the Helm Chart
         uses: mikefarah/yq@v4.34.1
         with:
-          cmd: yq -i '.image.tag = "${{ env.BUILD_ID }}"' helm-chart/${{ env.HELM_VALUE }}
+          cmd: yq -i 'del(.image.tag) | .image.tag = "${{ env.BUILD_ID }}"' helm-chart/${{ env.HELM_VALUE }}
 
       - name: Commit and Push Helm Chart Changes
         run: |
