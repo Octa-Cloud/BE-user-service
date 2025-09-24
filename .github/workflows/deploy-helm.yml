@@ -1,4 +1,8 @@
 name: User-Service Image Build
+
+env:
+    HELM_VALUE: user-service/values.yaml
+
 on:
   push:
     branches: [ "main" ]
