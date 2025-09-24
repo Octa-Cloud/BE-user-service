@@ -37,20 +37,20 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: user-service   # Dockerfile 위치에 맞게 . 또는 user-service
           push: true
           tags: |
-            mong-develop/user-service:${{ steps.vars.outputs.sha_short }}
-            mong-develop/user-service:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:latest
       # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
-      - name: Update Manifest Repo
+      - name: Update Helm Charts Repo
         uses: actions/checkout@v3
         with:
           repository: Octa-Cloud/Infra-helm-charts    # ArgoCD가 바라보는 Organization/Repo
           token: ${{ secrets.GH_PAT }}       # Personal Access Token 필요
-          path: manifests
+          path: user-service
 
       - name: Install yq
         run: |
