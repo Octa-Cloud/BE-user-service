@@ -38,10 +38,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          # file: ./Dockerfile   # 루트가 아니면 명시
           push: true
           tags: |
-            octa-cloud/user-service:${{ steps.vars.outputs.sha_short }}
-            octa-cloud/user-service:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:latest
       # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
