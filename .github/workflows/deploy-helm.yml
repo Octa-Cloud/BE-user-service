@@ -36,12 +36,12 @@ jobs:
       # Docker Image 빌드 및 푸시
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
-        with:
-          context: user-service   # Dockerfile 위치에 맞게 . 또는 user-service
-          push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
-            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:latest
+       with:
+        context: .
+        push: true
+        tags: |
+          docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
+          docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:latest
       # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
