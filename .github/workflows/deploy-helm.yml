@@ -38,7 +38,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: user-service/Dockerfile
           push: true
           tags: |
             docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
@@ -46,38 +45,41 @@ jobs:
       # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
-      - name: Update Helm Charts Repo
-        uses: actions/checkout@v3
+      - name: Checkout Helm Repository
+        uses: actions/checkout@v4
         with:
-          repository: Octa-Cloud/Infra-helm-charts    # ArgoCD가 바라보는 Organization/Repo
-          token: ${{ secrets.GH_PAT }}       # Personal Access Token 필요
-          path: infra-helm
+          repository: ${{ env.INFRA_REPO }}
+          path: helm-chart
+          ref: ${{ env.HELM_BRANCH }}
+          token: ${{ secrets.GH_PAT }}
 
-      - name: Install yq
-        run: |
-          YQ_VERSION=v4.44.3
-          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
-          chmod +x /usr/local/bin/yq
+      - name: Change Image tag of the Helm Chart
+        uses: mikefarah/yq@v4.34.1
+        with:
+          cmd: yq -i '.image.tag = "${{ env.BUILD_ID }}"' helm-chart/${{ env.HELM_VALUE }}
 
-      # Manifest Repository에서 Manifest 파일 내의 이미지 태그를 업데이트
-      - name: Update image tag in Deployment yaml
+      - name: Commit and Push Helm Chart Changes
         run: |
-          echo "== ls infra-helm ==" && ls -la infra-helm || true
-          echo "== find values.yaml ==" && find infra-helm -maxdepth 5 -name values.yaml -print
-          CHART_DIR=$(find infra-helm -maxdepth 5 -type f -name values.yaml -path "*/user-service/*" -printf '%h\n' -quit)
-          if [ -z "$CHART_DIR" ]; then echo "values.yaml 위치를 찾지 못했습니다."; exit 1; fi
-          echo "Using CHART_DIR=$CHART_DIR"
-          export IMAGE_REPO="${{ secrets.DOCKER_USERNAME }}/user-service"
-          export IMAGE_TAG="${{ steps.vars.outputs.sha_short }}"
-          yq -i '.image.repository = strenv(IMAGE_REPO) | .image.tag = strenv(IMAGE_TAG)' "$CHART_DIR/values.yaml"
-          git config user.name "koungq"
-          git config user.email "guu119@naver.com"
-          if git -C "$CHART_DIR" diff --quiet values.yaml; then
-            echo "No changes detected in values.yaml"
-          else
-            echo "Changes detected:"
-            git -C "$CHART_DIR" diff values.yaml || true
-            git -C "$CHART_DIR" add values.yaml
-            git -C "$CHART_DIR" commit -m "Update user-service image to ${{ steps.vars.outputs.sha_short }}"
-            git push origin main
-          fi
+          cd helm-chart
+          git config --local user.email "githubaction@gmail.com"
+          git config --local user.name "githubaction"
+          git add ${{ env.HELM_VALUE }}
+          git commit -m "Update ${SERVICE_NAME} image tag to ${{ env.BUILD_ID }}" || echo "No changes to commit"
+          
+          # Push with retry logic
+          attempts=0
+          max_attempts=3
+          
+          while [ $attempts -lt $max_attempts ]; do
+            if git push origin ${{ env.HELM_BRANCH }}; then
+              echo "Push successful!"
+              break
+            else
+              echo "Push failed. Attempting rebase with remote branch."
+              git pull --rebase origin ${{ env.HELM_BRANCH }}
+              attempts=$((attempts+1))
+              if [ $attempts -eq $max_attempts ]; then
+                echo "Push failed after $max_attempts attempts"
+                exit 1
+              fi
+              echo "Retrying push..."
