@@ -23,4 +23,3 @@ public class LoginController implements LoginApiSpec {
         return BaseResponse.onSuccess(loginUseCase.execute(request));
     }
 }
-
