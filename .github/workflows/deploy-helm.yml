@@ -1,7 +1,11 @@
 name: User-Service Image Build
 
 env:
+    SERVICE_NAME: user-service
+    BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
     HELM_VALUE: user-service/values.yaml
+    HELM_BRANCH: main
+    INFRA_REPO: ${{ secrets.INFRA_REPO }}
 
 on:
   push:
@@ -38,14 +42,12 @@ jobs:
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       # Docker Image 빌드 및 푸시
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:${{ steps.vars.outputs.sha_short }}
-            docker.io/${{ secrets.DOCKER_USERNAME }}/user-service:latest
+      - name: Build and push image to Docker Hub
+        env:
+          IMAGE_TAG: mong/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
+        run: |
+          docker build -f ./Dockerfile -t "$IMAGE_TAG" .
+          docker push "$IMAGE_TAG"
       # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
