@@ -1,87 +1,77 @@
 name: User-Service Image Build
-
-env:
-  SERVICE_NAME: user-service
-  BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
-  HELM_VALUE: user-service/values.yaml
-  HELM_BRANCH: main
-  INFRA_REPO: ${{ secrets.INFRA_REPO }}
-
 on:
   push:
-    branches:
-      - 'main'
-    paths:
-      - 'src/**'
-      - 'build.gradle'
-      - 'Dockerfile'
-      - '.github/workflows/deploy-helm.yml'
+    branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Google Cloud Auth
-        uses: google-github-actions/auth@v1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+      # Gradle 빌드
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
 
-      - name: Configure Artifact Registry Authentication
-        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+      # Docker 로그인
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Build Spring Boot Application
-        run: ./gradlew clean build
+      # 태그명 변수화 + 짧게 만들기
+      - name: Set Image Version Tag
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build and push image to Artifact Registry
-        env:
-          IMAGE_TAG: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ env.BUILD_ID }}
+      # Docker Image 빌드 및 푸시
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            mong-develop/user-service:${{ steps.vars.outputs.sha_short }}
+            mong-develop/user-service:latest
+      # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
+
+      # ArgoCD가 참조하는 Repository로 checkout
+      - name: Update Manifest Repo
+        uses: actions/checkout@v3
+        with:
+          repository: Octa-Cloud/Infra-helm-charts    # ArgoCD가 바라보는 Organization/Repo
+          token: ${{ secrets.GH_PAT }}       # Personal Access Token 필요
+          path: manifests
+
+      - name: Install yq
         run: |
-          docker build -f ./Dockerfile -t $IMAGE_TAG .
-          docker push $IMAGE_TAG
+          YQ_VERSION=v4.44.3
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
 
-      - name: Checkout Helm Repository
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.INFRA_REPO }}
-          path: helm-chart
-          ref: ${{ env.HELM_BRANCH }}
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Change Image tag of the Helm Chart
-        uses: mikefarah/yq@v4.34.1
-        with:
-          cmd: yq -i '.image.tag = "${{ env.BUILD_ID }}"' helm-chart/${{ env.HELM_VALUE }}
-
-      - name: Commit and Push Helm Chart Changes
+      # Manifest Repository에서 Manifest 파일 내의 이미지 태그를 업데이트
+      - name: Update image tag in Deployment yaml
         run: |
-          cd helm-chart
-          git config --local user.email "githubaction@gmail.com"
-          git config --local user.name "githubaction"
-          git add ${{ env.HELM_VALUE }}
-          git commit -m "Update ${SERVICE_NAME} image tag to ${{ env.BUILD_ID }}" || echo "No changes to commit"
-          
-          # Push with retry logic
-          attempts=0
-          max_attempts=3
-          
-          while [ $attempts -lt $max_attempts ]; do
-            if git push origin ${{ env.HELM_BRANCH }}; then
-              echo "Push successful!"
-              break
-            else
-              echo "Push failed. Attempting rebase with remote branch."
-              git pull --rebase origin ${{ env.HELM_BRANCH }}
-              attempts=$((attempts+1))
-              if [ $attempts -eq $max_attempts ]; then
-                echo "Push failed after $max_attempts attempts"
-                exit 1
-              fi
-              echo "Retrying push..."
-            fi
-          done
+          cd manifests/user-service
+          yq -i '.image.repository = "mong-develop/user-service"' values.yaml
+          yq -i '.image.tag = "${{ steps.vars.outputs.sha_short }}"' values.yaml
+          git config user.name "koungq"
+          git config user.email "guu119@naver.com"
+          if git diff --quiet values.yaml; then
+            echo "No changes detected in values.yaml"
+          else
+            echo "Changes detected:"
+            git diff values.yaml
+            git add values.yaml
+            git commit -m "Update user-service image to ${{ steps.vars.outputs.sha_short }}"
+            git push origin main
+          fi
