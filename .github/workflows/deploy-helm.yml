@@ -48,7 +48,6 @@ jobs:
         run: |
           docker build -f ./Dockerfile -t "$IMAGE_TAG" .
           docker push "$IMAGE_TAG"
-      # IMAGE_NAME : prefix로 Docker Hub의 Repository 이름이 들어가야 함
 
       # ArgoCD가 참조하는 Repository로 checkout
       - name: Checkout Helm Repository
