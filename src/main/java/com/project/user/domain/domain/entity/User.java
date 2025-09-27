@@ -41,12 +41,25 @@ public class User extends BaseEntity {
     private Gender gender;
 
     @Min(0) @Max(100)
-    @Column(name = "avg_score", columnDefinition = "TINYINT UNSIGNED", nullable = false)
-    private int avgScore;
+    @Column(name = "avg_score", columnDefinition = "TINYINT UNSIGNED")
+    private Integer avgScore;
 
     @Column(name = "avg_sleep_time")
-    private int avgSleepTime;
+    private Integer avgSleepTime;
 
     @Column(name = "avg_bed_time")
     private LocalTime avgBedTime;
+
+    @PrePersist
+    public void prePersist() {
+        if(avgScore == null) {
+            avgScore = 0;
+        }
+        if(avgSleepTime == null) {
+            avgSleepTime = 0;
+        }
+        if(avgBedTime == null) {
+            avgBedTime = LocalTime.of(23, 0);
+        }
+    }
 }
