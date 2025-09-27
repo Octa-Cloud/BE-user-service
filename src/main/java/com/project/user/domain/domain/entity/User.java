@@ -3,6 +3,8 @@ package com.project.user.domain.domain.entity;
 import com.project.user.global.common.BaseEntity;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,8 +40,9 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(name = "avg_score")
-    private Byte avgScore;
+    @Min(0) @Max(100)
+    @Column(name = "avg_score", columnDefinition = "TINYINT UNSIGNED", nullable = false)
+    private int avgScore;
 
     @Column(name = "avg_sleep_time")
     private int avgSleepTime;

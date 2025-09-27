@@ -4,7 +4,7 @@ import java.time.LocalTime;
 
 public record SummaryResponse (
 
-        Byte score,
+        int score,
         int sleepTime,
         LocalTime bedTime
 ){ }

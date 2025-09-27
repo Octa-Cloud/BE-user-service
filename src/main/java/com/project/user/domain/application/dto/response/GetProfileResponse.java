@@ -4,7 +4,7 @@ import com.project.user.domain.domain.entity.Gender;
 
 import java.time.LocalDate;
 
-public record InformationResponse (
+public record GetProfileResponse(
         String name,
         String email,
         String nickname,
