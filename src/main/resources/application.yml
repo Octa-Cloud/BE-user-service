@@ -37,6 +37,8 @@ exclude-auth-path-patterns:
       method: POST
     - path-pattern: /api/users/login
       method: POST
+    - path-pattern: /api/users
+      method: DELETE
     - path-pattern: /api/email/send
       method: POST
     - path-pattern: /api/email/verify
@@ -62,6 +64,8 @@ exclude-blacklist-path-patterns:
       method: POST
     - path-pattern: /api/users/login
       method: POST
+    - path-pattern: /api/users
+      method: DELETE
     - path-pattern: /api/email/send
       method: POST
     - path-pattern: /api/email/verify
@@ -88,6 +92,8 @@ exclude-whitelist-path-patterns:
     - pathPattern: /api/users/login
       method: POST
     - path-pattern: /api/users/logout
+      method: DELETE
+    - path-pattern: /api/users
       method: DELETE
     - path-pattern: /api/token/reissue
       method: POST
