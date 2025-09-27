@@ -1,5 +1,7 @@
 package com.project.user.domain.domain.service;
 
+import com.project.user.domain.application.dto.request.ChangeNicknameRequest;
+import com.project.user.domain.application.dto.request.ChangePasswordRequest;
 import com.project.user.domain.application.dto.request.SignUpRequest;
 import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.repository.UserRepository;
@@ -46,5 +48,17 @@ public class UserService {
     public void validateExistsById(Long userNo) {
         if (!userRepository.existsById(userNo))
             throw new RestApiException(_NOT_FOUND);
+    }
+
+    public User updateNickname(Long userNo, ChangeNicknameRequest request) {
+        User user = findById(userNo);
+        user.changeNickname(request.nickname());
+        return userRepository.save(user);
+    }
+
+    public User updatePassword(Long userNo, ChangePasswordRequest request) {
+        User user = findById(userNo);
+        user.changePassword(passwordEncoder.encode(request.password()));
+        return userRepository.save(user);
     }
 }
