@@ -140,3 +140,18 @@ springdoc:
     enabled: true
   paths-to-match:
     - /api/**
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,liveness,readiness,prometheus
+  endpoint:
+    health:
+      show-details: always
+    liveness:
+      enabled: true
+    readiness:
+      enabled: true
+  metrics:
+    tags:
+      application: user-service
