@@ -7,7 +7,7 @@ import java.time.LocalTime;
 
 @Builder
 public record SleepGoalResponse(
-        Long userId,
+        Long userNo,
         LocalTime goalBedTime,
         LocalTime goalWakeTime,
         Integer goalTotalSleepTime,
@@ -15,7 +15,7 @@ public record SleepGoalResponse(
 ) {
     public static SleepGoalResponse from(SleepGoal sleepGoal) {
         return SleepGoalResponse.builder()
-                .userId(sleepGoal.getUser().getUserNo())
+                .userNo(sleepGoal.getUserNo())
                 .goalBedTime(sleepGoal.getGoalBedTime())
                 .goalWakeTime(sleepGoal.getGoalWakeTime())
                 .goalTotalSleepTime(sleepGoal.getGoalTotalSleepTime())

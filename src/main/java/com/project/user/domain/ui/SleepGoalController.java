@@ -4,25 +4,22 @@ import com.project.user.domain.application.dto.request.SleepGoalRequest;
 import com.project.user.domain.application.dto.response.SleepGoalResponse;
 import com.project.user.domain.application.usecase.GetSleepGoalUseCase;
 import com.project.user.domain.application.usecase.SetSleepGoalUseCase;
+import com.project.user.domain.ui.spec.SleepGoalApiSpec;
 import com.project.user.global.annotation.CurrentUser;
 import com.project.user.global.common.BaseResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/users/goals")
 @RequiredArgsConstructor
-@Tag(name = "수면 목표", description = "수면 목표 관련 API")
-public class SleepGoalController {
+public class SleepGoalController implements SleepGoalApiSpec {
 
     private final GetSleepGoalUseCase getSleepGoalUseCase;
     private final SetSleepGoalUseCase setSleepGoalUseCase;
 
-    @GetMapping
-    @Operation(summary = "수면 목표 조회", description = "사용자의 수면 목표를 조회합니다.")
+    @Override
     public BaseResponse<SleepGoalResponse> getSleepGoal(
             @CurrentUser Long userNo
     ) {
@@ -30,8 +27,7 @@ public class SleepGoalController {
         return BaseResponse.onSuccess(response);
     }
 
-    @PostMapping
-    @Operation(summary = "수면 목표 설정/갱신", description = "사용자의 수면 목표를 생성하거나 갱신합니다.")
+    @Override
     public BaseResponse<SleepGoalResponse> setSleepGoal(
             @CurrentUser Long userNo,
             @Valid @RequestBody SleepGoalRequest request

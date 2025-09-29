@@ -19,12 +19,11 @@ import java.time.LocalTime;
 public class SleepGoal extends BaseEntity {
 
     @Id @Tsid
-    @Column(name = "goal_id")
-    private Long id;
+    @Column(name = "goal_no")
+    private Long goalNo;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_no")
-    private User user;
+    @Column(name = "user_no")
+    private Long userNo;
 
     @Column(name = "goal_bed_time")
     private LocalTime goalBedTime;

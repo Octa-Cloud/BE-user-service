@@ -5,8 +5,8 @@ import com.project.user.domain.domain.entity.SleepGoal;
 import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.repository.SleepGoalRepository;
 import com.project.user.domain.domain.repository.UserRepository;
-import com.project.user.global.exception.SleepGoalNotFoundException;
-import com.project.user.global.exception.UserNotFoundException;
+import com.project.user.global.exception.RestApiException;
+import com.project.user.global.exception.code.status.GlobalErrorStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +20,13 @@ public class SleepGoalService {
 
     @Transactional(readOnly = true)
     public SleepGoal getSleepGoal(Long userNo) {
-        return sleepGoalRepository.findByUserUserNo(userNo)
-                .orElseThrow(SleepGoalNotFoundException::new);
+        return sleepGoalRepository.findByUserNo(userNo)
+                .orElseThrow(() -> new RestApiException(GlobalErrorStatus.SLEEP_GOAL_NOT_FOUND));
     }
 
     @Transactional
     public SleepGoal setSleepGoal(Long userNo, SleepGoalRequest request) {
-        SleepGoal sleepGoal = sleepGoalRepository.findByUserUserNo(userNo)
+        SleepGoal sleepGoal = sleepGoalRepository.findByUserNo(userNo)
                 .map(goal -> {
                     // 목표가 이미 있으면, 기존 엔티티의 값을 업데이트합니다.
                     goal.update(
@@ -39,10 +39,10 @@ public class SleepGoalService {
                 .orElseGet(() -> {
                     // 목표가 없으면, 새로 생성합니다.
                     User user = userRepository.findById(userNo)
-                            .orElseThrow(UserNotFoundException::new);
+                            .orElseThrow(() -> new RestApiException(GlobalErrorStatus.USER_NOT_FOUND));
 
                     return SleepGoal.builder()
-                            .user(user)
+                            .userNo(userNo)
                             .goalBedTime(request.goalBedTime())
                             .goalWakeTime(request.goalWakeTime())
                             .goalTotalSleepTime(request.goalTotalSleepTime())
