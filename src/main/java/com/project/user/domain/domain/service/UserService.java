@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import static com.project.user.global.exception.code.status.GlobalErrorStatus._NOT_FOUND;
+import java.util.Objects;
+
+import static com.project.user.global.exception.code.status.GlobalErrorStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -53,12 +55,15 @@ public class UserService {
     public User updateNickname(Long userNo, ChangeNicknameRequest request) {
         User user = findById(userNo);
         user.changeNickname(request.nickname());
-        return userRepository.save(user);
+        return user;
     }
 
-    public User updatePassword(Long userNo, ChangePasswordRequest request) {
+    public void updatePassword(Long userNo, ChangePasswordRequest request) {
+        //비밀번호 == 확인용 비밀번호 검사, 문자열 값 자체 비교
+        if(!Objects.equals(request.password(), request.checkPassword())){
+            throw new RestApiException(PASSWORD_NOT_MATCH);
+        }
         User user = findById(userNo);
         user.changePassword(passwordEncoder.encode(request.password()));
-        return userRepository.save(user);
     }
 }

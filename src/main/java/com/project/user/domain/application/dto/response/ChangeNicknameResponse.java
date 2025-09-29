@@ -5,12 +5,12 @@ import lombok.Builder;
 
 @Builder
 public record ChangeNicknameResponse(
-    String nickName
+    String nickname
 ) {
 
     public static ChangeNicknameResponse from(User user) {
         return ChangeNicknameResponse.builder()
-                .nickName(user.getNickname())
+                .nickname(user.getNickname())
                 .build();
     }
 }
