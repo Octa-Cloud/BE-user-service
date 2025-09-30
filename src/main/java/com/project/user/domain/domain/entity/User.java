@@ -40,6 +40,14 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
+
     @Min(0) @Max(100)
     @Column(name = "avg_score", columnDefinition = "TINYINT UNSIGNED")
     private Integer avgScore;
