@@ -9,6 +9,7 @@ import com.project.user.global.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
@@ -52,18 +53,8 @@ public class UserService {
             throw new RestApiException(_NOT_FOUND);
     }
 
-    public User updateNickname(Long userNo, ChangeNicknameRequest request) {
-        User user = findById(userNo);
-        user.changeNickname(request.nickname());
-        return user;
-    }
-
-    public void updatePassword(Long userNo, ChangePasswordRequest request) {
-        //비밀번호 == 확인용 비밀번호 검사, 문자열 값 자체 비교
-        if(!Objects.equals(request.password(), request.checkPassword())){
-            throw new RestApiException(PASSWORD_NOT_MATCH);
-        }
-        User user = findById(userNo);
-        user.changePassword(passwordEncoder.encode(request.password()));
+    @Transactional
+    public void deleteUser(Long userNo) {
+        userRepository.deleteById(userNo);
     }
 }
