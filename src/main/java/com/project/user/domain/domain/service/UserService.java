@@ -1,5 +1,7 @@
 package com.project.user.domain.domain.service;
 
+import com.project.user.domain.application.dto.request.ChangeNicknameRequest;
+import com.project.user.domain.application.dto.request.ChangePasswordRequest;
 import com.project.user.domain.application.dto.request.SignUpRequest;
 import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.repository.UserRepository;
@@ -9,7 +11,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.project.user.global.exception.code.status.GlobalErrorStatus._NOT_FOUND;
+import java.util.Objects;
+
+import static com.project.user.global.exception.code.status.GlobalErrorStatus.*;
 
 @Service
 @RequiredArgsConstructor

@@ -30,6 +30,12 @@ public enum GlobalErrorStatus implements BaseCodeInterface {
     // For test
     TEMP_EXCEPTION(HttpStatus.BAD_REQUEST, "TEMP4001", "예외처리 테스트입니다."),
 
+    // Sleep Goal
+    SLEEP_GOAL_NOT_FOUND(HttpStatus.NOT_FOUND, "GOAL4001", "해당 유저의 수면 목표가 존재하지 않습니다."),
+
+    // User
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER4001", "해당 유저를 찾을 수 없습니다."),
+
     // Mail
     FAILED_SEND_VERIFY_CODE(HttpStatus.INTERNAL_SERVER_ERROR, "MAIL001", "인증번호 전송에 실패하였습니다."),
 
@@ -41,9 +47,11 @@ public enum GlobalErrorStatus implements BaseCodeInterface {
     NO_PERMISSION_ON_ROOM(HttpStatus.UNAUTHORIZED, "ROOM005", "권한이 없습니다."),
     ROOM_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM006", "존재하지 않는 요청입니다."),
     ROOM_IS_NOT_FULL(HttpStatus.BAD_REQUEST, "ROOM007", "방이 가득차지 않았습니다."),
-    ALREADY_CONFIRM_REQUEST(HttpStatus.BAD_REQUEST, "ROOM008", "이미 처리된 요청입니다.")
-    ;
+    ALREADY_CONFIRM_REQUEST(HttpStatus.BAD_REQUEST, "ROOM008", "이미 처리된 요청입니다."),
 
+    // Password
+    PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST,"PASSWORD001","비밀번호와 확인 비밀번호가 일치하지 않습니다.")
+    ;
     private final HttpStatus httpStatus;
     private final boolean isSuccess = false;
     private final String code;

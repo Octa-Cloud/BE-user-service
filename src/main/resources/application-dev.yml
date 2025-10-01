@@ -55,6 +55,8 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /actuator/health/**
       method: GET
+    - path-pattern: /actuator/prometheus/**
+      method: GET
 
 exclude-blacklist-path-patterns:
   paths:
@@ -79,6 +81,8 @@ exclude-blacklist-path-patterns:
     - path-pattern: /webjars
       method: GET
     - path-pattern: /actuator/health/**
+      method: GET
+    - path-pattern: /actuator/prometheus/**
       method: GET
 
 exclude-whitelist-path-patterns:
@@ -109,6 +113,9 @@ exclude-whitelist-path-patterns:
       method: GET
     - path-pattern: /actuator/health/**
       method: GET
+    - path-pattern: /actuator/prometheus/**
+      method: GET
+
 
 jwt-properties:
   key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
