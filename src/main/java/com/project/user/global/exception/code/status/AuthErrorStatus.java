@@ -24,6 +24,8 @@ public enum AuthErrorStatus implements BaseCodeInterface {
     NOT_VERIFIED_EMAIL(HttpStatus.UNAUTHORIZED, "AUTH009", "인증되지 않은 이메일입니다."),
     INVALID_EMAIL_DOMAIN(HttpStatus.BAD_REQUEST, "AUTH009", "유효하지 않은 이메일 도메인입니다."),
     FAILED_EMAIL_VERIFICATION(HttpStatus.BAD_REQUEST, "AUTH009", "이메일 인증에 실패하였습니다."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH010", "비밀번호가 일치하지 않습니다."),
+
     ;
 
     private final HttpStatus httpStatus;

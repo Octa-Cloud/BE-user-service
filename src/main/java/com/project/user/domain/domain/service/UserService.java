@@ -7,6 +7,7 @@ import com.project.user.global.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.project.user.global.exception.code.status.GlobalErrorStatus._NOT_FOUND;
 
@@ -46,5 +47,10 @@ public class UserService {
     public void validateExistsById(Long userNo) {
         if (!userRepository.existsById(userNo))
             throw new RestApiException(_NOT_FOUND);
+    }
+
+    @Transactional
+    public void deleteUser(Long userNo) {
+        userRepository.deleteById(userNo);
     }
 }
