@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,14 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserDeletionUseCaseTest {
+class DeleteAccountUseCaseTest {
 
     @Mock private TokenProvider tokenProvider;
     @Mock private UserService userService;
     @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UserDeletionUseCase useCase;
+    private DeleteAccountUseCase useCase;
 
     private final String accessToken = "Bearer xxx.yyy.zzz";
     private final Long userNo = 42L;

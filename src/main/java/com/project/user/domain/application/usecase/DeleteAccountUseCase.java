@@ -10,16 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-
-import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ACCESS_TOKEN;
 import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ID_TOKEN;
 import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_PASSWORD;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class UserDeletionUseCase {
+public class DeleteAccountUseCase {
 
     private final TokenProvider tokenProvider;
     private final UserService userService;
@@ -34,8 +31,7 @@ public class UserDeletionUseCase {
             throw new RestApiException(INVALID_PASSWORD);
         }
 
-        Duration expiration = tokenProvider.getRemainingDuration(accessToken)
-                .orElseThrow(() -> new RestApiException(INVALID_ACCESS_TOKEN));
+        // todo: Kafka - blacklist 전파
 
         userService.deleteUser(userNo);
     }
