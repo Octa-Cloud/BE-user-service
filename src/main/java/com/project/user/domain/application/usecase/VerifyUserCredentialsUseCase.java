@@ -5,7 +5,7 @@ import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.service.UserService;
 import com.project.user.global.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import static com.project.user.global.exception.code.status.AuthErrorStatus.LOGIN_ERROR;
@@ -15,12 +15,11 @@ import static com.project.user.global.exception.code.status.AuthErrorStatus.LOGI
 public class VerifyUserCredentialsUseCase {
 
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
 
     public Long execute(VerifyCredentialRequest request) {
         User user = userService.findByEmail(request.email());
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!BCrypt.checkpw(request.password(), user.getPassword())) {
             throw new RestApiException(LOGIN_ERROR);
         }
 
