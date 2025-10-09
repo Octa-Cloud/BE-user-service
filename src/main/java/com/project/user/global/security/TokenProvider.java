@@ -3,27 +3,17 @@ package com.project.user.global.security;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.properties.JwtProperties;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Header;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.project.user.global.exception.code.status.AuthErrorStatus.UNSUPPORTED_JWT;
 
@@ -32,49 +22,6 @@ import static com.project.user.global.exception.code.status.AuthErrorStatus.UNSU
 public class TokenProvider {
 
     private final JwtProperties jwtProperties;
-
-    public String createAccessToken(Long id) {
-        return createToken(id, jwtProperties.getAccessTokenSubject());
-    }
-
-    public String createRefreshToken(Long id) {
-        return createToken(id, jwtProperties.getRefreshTokenSubject());
-    }
-
-    private String createToken(Long id, String subject) {
-        Date now = new Date();
-        return Jwts.builder()
-                .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
-                .setIssuedAt(now)
-                .setExpiration(Date.from(
-                        LocalDateTime.now()
-                                .plusDays(jwtProperties.getAccessTokenExpirationPeriodDay())
-                                .atZone(ZoneId.of("Asia/Seoul"))
-                                .toInstant()
-                ))
-                .setSubject(subject)
-                .claim(jwtProperties.getId(), id)
-                .signWith(Keys.hmacShaKeyFor(jwtProperties.getKey().getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    public Boolean validateToken(String jwtToken) {
-        try {
-            Jwts.parserBuilder().setSigningKey(Keys.hmacShaKeyFor(jwtProperties.getKey().getBytes(StandardCharsets.UTF_8)))
-                    .build()
-                    .parseClaimsJws(jwtToken);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public Authentication getAuthentication(String token) {
-        Claims claims = getClaims(token);
-        Set<SimpleGrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
-
-        return new UsernamePasswordAuthenticationToken(new User(String.valueOf(claims.get(jwtProperties.getId(), Long.class)), "", authorities), token, authorities);
-    }
 
     public Optional<Long> getId(String token) {
         try {

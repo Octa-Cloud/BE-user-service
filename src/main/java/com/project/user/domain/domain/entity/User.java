@@ -47,27 +47,4 @@ public class User extends BaseEntity {
     public void changePassword(String password) {
         this.password = password;
     }
-
-    @Min(0) @Max(100)
-    @Column(name = "avg_score", columnDefinition = "TINYINT UNSIGNED")
-    private Integer avgScore;
-
-    @Column(name = "avg_sleep_time")
-    private Integer avgSleepTime;
-
-    @Column(name = "avg_bed_time")
-    private LocalTime avgBedTime;
-
-    @PrePersist
-    public void prePersist() {
-        if(avgScore == null) {
-            avgScore = 0;
-        }
-        if(avgSleepTime == null) {
-            avgSleepTime = 0;
-        }
-        if(avgBedTime == null) {
-            avgBedTime = LocalTime.of(23, 0);
-        }
-    }
 }

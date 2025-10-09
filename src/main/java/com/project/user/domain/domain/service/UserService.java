@@ -1,26 +1,21 @@
 package com.project.user.domain.domain.service;
 
-import com.project.user.domain.application.dto.request.ChangeNicknameRequest;
-import com.project.user.domain.application.dto.request.ChangePasswordRequest;
 import com.project.user.domain.application.dto.request.SignUpRequest;
 import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.repository.UserRepository;
 import com.project.user.global.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
-import static com.project.user.global.exception.code.status.GlobalErrorStatus.*;
+import static com.project.user.global.exception.code.status.GlobalErrorStatus._NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -37,7 +32,7 @@ public class UserService {
                         .email(request.email())
                         .name(request.name())
                         .nickname(request.nickname())
-                        .password(passwordEncoder.encode(request.password()))
+                        .password(BCrypt.hashpw(request.password(), BCrypt.gensalt(12)))
                         .gender(request.gender())
                         .build()
         );
@@ -46,11 +41,6 @@ public class UserService {
     public User findById(Long userNo) {
         return userRepository.findById(userNo)
                 .orElseThrow(() -> new RestApiException(_NOT_FOUND));
-    }
-
-    public void validateExistsById(Long userNo) {
-        if (!userRepository.existsById(userNo))
-            throw new RestApiException(_NOT_FOUND);
     }
 
     @Transactional
