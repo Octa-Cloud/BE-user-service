@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 51234
 
 spring:
   datasource:
@@ -57,6 +57,8 @@ exclude-auth-path-patterns:
       method: GET
     - path-pattern: /actuator/prometheus/**
       method: GET
+    - path-pattern: /api/users/internal/credentials
+      method: POST
 
 exclude-blacklist-path-patterns:
   paths:
@@ -84,37 +86,8 @@ exclude-blacklist-path-patterns:
       method: GET
     - path-pattern: /actuator/prometheus/**
       method: GET
-
-exclude-whitelist-path-patterns:
-  paths:
-    - path-pattern: /api/users/sign-up
+    - path-pattern: /api/users/internal/credentials
       method: POST
-    - pathPattern: /api/users/login
-      method: POST
-    - path-pattern: /api/users/logout
-      method: DELETE
-    - path-pattern: /api/token/reissue
-      method: POST
-    - path-pattern: /api/email/send
-      method: POST
-    - path-pattern: /api/email/verify
-      method: POST
-    - path-pattern: /swagger-ui.html
-      method: GET
-    - path-pattern: /swagger-ui/index.html
-      method: GET
-    - path-pattern: /swagger-ui/**
-      method: GET
-    - path-pattern: /v3/api-docs
-      method: GET
-    - path-pattern: /v3/api-docs/swagger-config
-      method: GET
-    - path-pattern: /webjars
-      method: GET
-    - path-pattern: /actuator/health/**
-      method: GET
-    - path-pattern: /actuator/prometheus/**
-      method: GET
 
 jwt-properties:
   key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}

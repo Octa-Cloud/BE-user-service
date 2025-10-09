@@ -20,7 +20,7 @@ public interface ChangeNicknameApiSpec {
     )
 
     @PatchMapping("/nickname")
-    BaseResponse<ChangeNicknameResponse> changeNickname(
+    BaseResponse<Void> changeNickname(
             Long userNo,
             @RequestBody(
                     description = "변경하고자 하는 닉네임",

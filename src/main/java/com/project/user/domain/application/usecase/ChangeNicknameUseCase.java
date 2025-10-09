@@ -13,11 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChangeNicknameUseCase {
 
     private final UserService userService;
-    @Transactional
-    public ChangeNicknameResponse changeNickname(Long userNo, ChangeNicknameRequest request){
 
-        User updated = userService.updateNickname(userNo, request);
-        return ChangeNicknameResponse.from(updated);
+    @Transactional
+    public void changeNickname(Long userNo, ChangeNicknameRequest request){
+        User user = userService.findById(userNo);
+        user.changeNickname(request.nickname());
     }
 
 }

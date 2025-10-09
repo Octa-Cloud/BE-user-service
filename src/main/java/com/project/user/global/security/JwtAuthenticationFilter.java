@@ -1,9 +1,7 @@
 package com.project.user.global.security;
 
-import com.project.user.domain.domain.service.TokenWhitelistService;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.properties.ExcludeAuthPathProperties;
-import com.project.user.global.properties.ExcludeWhitelistPathProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +16,6 @@ import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.Duration;
 
 import static com.project.user.global.exception.code.status.AuthErrorStatus.EMPTY_JWT;
 import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ACCESS_TOKEN;
@@ -28,8 +25,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenProvider tokenProvider;
     private final ExcludeAuthPathProperties excludeAuthPathProperties;
-    private final TokenWhitelistService tokenWhitelistService;
-    private final ExcludeWhitelistPathProperties excludeWhitelistPathProperties;
     private static final PathPatternParser pathPatternParser = new PathPatternParser();
 
     @Override
@@ -43,21 +38,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = tokenProvider.getToken(request)
                     .orElseThrow(() -> new RestApiException(EMPTY_JWT));
 
-            if (tokenWhitelistService.isWhitelistToken(token)) {
-                setAuthentication(token);
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             // 토큰 검증
             if(tokenProvider.validateToken(token))
                 setAuthentication(token);
             else
                 throw new RestApiException(INVALID_ACCESS_TOKEN);
-
-            if(!isExcludedPathForWhitelist(request)) {
-                tokenWhitelistService.whitelist(token, Duration.ofSeconds(30));
-            }
 
             filterChain.doFilter(request, response);
         } catch (RestApiException e) {
@@ -82,18 +67,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         pathPatternParser.parse(authPath.getPathPattern())
                                 .matches(PathContainer.parsePath(requestPath))
                         && requestMethod.equals(HttpMethod.valueOf(authPath.getMethod()))
-                );
-    }
-
-    public boolean isExcludedPathForWhitelist(HttpServletRequest request) {
-        String requestPath = request.getRequestURI();
-        HttpMethod requestMethod = HttpMethod.valueOf(request.getMethod());
-
-        return excludeWhitelistPathProperties.getPaths().stream()
-                .anyMatch(authPath ->
-                        pathPatternParser.parse(authPath.getPathPattern())
-                                .matches(PathContainer.parsePath(requestPath))
-                                && requestMethod.equals(HttpMethod.valueOf(authPath.getMethod()))
                 );
     }
 

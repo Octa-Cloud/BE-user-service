@@ -1,9 +1,6 @@
 package com.project.user.domain.application.usecase;
 
 import com.project.user.domain.application.dto.request.SleepGoalRequest;
-import com.project.user.domain.application.dto.response.SleepGoalResponse;
-import com.project.user.domain.domain.entity.SleepGoal;
-import com.project.user.domain.domain.service.SleepGoalService;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.exception.code.status.GlobalErrorStatus;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,7 +1,5 @@
 package com.project.user;
 
-import com.project.user.domain.application.dto.response.SummaryResponse;
-import com.project.user.domain.application.usecase.SummaryUseCase;
 import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.service.UserService;
 import com.project.user.global.exception.RestApiException;

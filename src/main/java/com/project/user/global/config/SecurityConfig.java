@@ -1,8 +1,6 @@
 package com.project.user.global.config;
 
-import com.project.user.domain.domain.service.TokenWhitelistService;
 import com.project.user.global.properties.ExcludeAuthPathProperties;
-import com.project.user.global.properties.ExcludeWhitelistPathProperties;
 import com.project.user.global.security.JwtAuthenticationFilter;
 import com.project.user.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +24,6 @@ public class SecurityConfig {
 
     private final TokenProvider tokenProvider;
     private final ExcludeAuthPathProperties excludeAuthPathProperties;
-    private final TokenWhitelistService tokenWhitelistService;
-    private final ExcludeWhitelistPathProperties excludeWhitelistPathProperties;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -65,7 +61,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenProvider, excludeAuthPathProperties, tokenWhitelistService, excludeWhitelistPathProperties);
+        return new JwtAuthenticationFilter(tokenProvider, excludeAuthPathProperties);
     }
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
