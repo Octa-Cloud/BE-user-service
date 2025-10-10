@@ -14,7 +14,7 @@ public interface GetProfileApiSpec {
             summary = "회원 정보 조회",
             description = "사용자의 이름, 이메일, 닉네임, 생년월일, 성별을 반환합니다."
     )
-    @GetMapping("api/user/information")
+    @GetMapping("api/users/information")
     BaseResponse<GetProfileResponse> information(
             @CurrentUser @Parameter(hidden = true) Long userNo
     );

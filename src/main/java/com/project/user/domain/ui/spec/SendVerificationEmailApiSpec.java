@@ -14,7 +14,7 @@ public interface SendVerificationEmailApiSpec {
             description = "사용자가 입력한 이메일 주소로 인증 메일을 전송합니다. "
                     + "회원가입 시 사용됩니다."
     )
-    @PostMapping("/api/email/send")
+    @PostMapping("/api/users/email/send")
     BaseResponse<Void> send(
             @Parameter(description = "인증 이메일을 받을 사용자 이메일 주소") String email
     );
