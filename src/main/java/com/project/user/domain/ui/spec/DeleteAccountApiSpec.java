@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "User Deletion", description = "회원 탈퇴 API")
-public interface UserDeletionApiSpec {
+public interface DeleteAccountApiSpec {
 
     @Operation(summary = "회원 탈퇴", description = "비밀번호를 확인하여 회원을 탈퇴시키는 API입니다.")
     @ApiResponses({

@@ -7,20 +7,20 @@ import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.repository.UserRepository;
 import com.project.user.global.exception.RestApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
-import static com.project.user.global.exception.code.status.GlobalErrorStatus.*;
+import static com.project.user.global.exception.code.status.GlobalErrorStatus.PASSWORD_NOT_MATCH;
+import static com.project.user.global.exception.code.status.GlobalErrorStatus._NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -37,7 +37,7 @@ public class UserService {
                         .email(request.email())
                         .name(request.name())
                         .nickname(request.nickname())
-                        .password(passwordEncoder.encode(request.password()))
+                        .password(BCrypt.hashpw(request.password(), BCrypt.gensalt(12)))
                         .gender(request.gender())
                         .build()
         );
@@ -48,10 +48,6 @@ public class UserService {
                 .orElseThrow(() -> new RestApiException(_NOT_FOUND));
     }
 
-    public void validateExistsById(Long userNo) {
-        if (!userRepository.existsById(userNo))
-            throw new RestApiException(_NOT_FOUND);
-    }
     public User updateNickname(Long userNo, ChangeNicknameRequest request) {
         User user = findById(userNo);
         user.changeNickname(request.nickname());
@@ -64,7 +60,7 @@ public class UserService {
             throw new RestApiException(PASSWORD_NOT_MATCH);
         }
         User user = findById(userNo);
-        user.changePassword(passwordEncoder.encode(request.password()));
+        user.changePassword(BCrypt.hashpw(request.password(), BCrypt.gensalt(12)));
     }
     @Transactional
     public void deleteUser(Long userNo) {

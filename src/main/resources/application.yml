@@ -59,104 +59,16 @@ spring:
       mail.smtp.starttls.enable: true
       mail.smtp.timeout: 5000
 
-
-exclude-auth-path-patterns:
-  paths:
-    - path-pattern: /api/users/sign-up
-      method: POST
-    - path-pattern: /api/users/login
-      method: POST
-    - path-pattern: /api/email/send
-      method: POST
-    - path-pattern: /api/email/verify
-      method: POST
-    - path-pattern: /swagger-ui.html
-      method: GET
-    - path-pattern: /swagger-ui/index.html
-      method: GET
-    - path-pattern: /swagger-ui/**
-      method: GET
-    - path-pattern: /v3/api-docs
-      method: GET
-    - path-pattern: /v3/api-docs/swagger-config
-      method: GET
-    - path-pattern: /webjars
-      method: GET
-    - path-pattern: /actuator/health/**
-      method: GET
-    - path-pattern: /actuator/prometheus/**
-      method: GET
-
-exclude-blacklist-path-patterns:
-  paths:
-    - path-pattern: /api/users/sign-up
-      method: POST
-    - path-pattern: /api/users/login
-      method: POST
-    - path-pattern: /api/email/send
-      method: POST
-    - path-pattern: /api/email/verify
-      method: POST
-    - path-pattern: /swagger-ui.html
-      method: GET
-    - path-pattern: /swagger-ui/index.html
-      method: GET
-    - path-pattern: /swagger-ui/**
-      method: GET
-    - path-pattern: /v3/api-docs
-      method: GET
-    - path-pattern: /v3/api-docs/swagger-config
-      method: GET
-    - path-pattern: /webjars
-      method: GET
-    - path-pattern: /actuator/health/**
-      method: GET
-    - path-pattern: /actuator/prometheus/**
-      method: GET
-
-exclude-whitelist-path-patterns:
-  paths:
-    - path-pattern: /api/users/sign-up
-      method: POST
-    - pathPattern: /api/users/login
-      method: POST
-    - path-pattern: /api/users/logout
-      method: DELETE
-    - path-pattern: /api/token/reissue
-      method: POST
-    - path-pattern: /api/email/send
-      method: POST
-    - path-pattern: /api/email/verify
-      method: POST
-    - path-pattern: /swagger-ui.html
-      method: GET
-    - path-pattern: /swagger-ui/index.html
-      method: GET
-    - path-pattern: /swagger-ui/**
-      method: GET
-    - path-pattern: /v3/api-docs
-      method: GET
-    - path-pattern: /v3/api-docs/swagger-config
-      method: GET
-    - path-pattern: /webjars
-      method: GET
-    - path-pattern: /actuator/health/**
-      method: GET
-    - path-pattern: /actuator/prometheus/**
-      method: GET
-
 jwt-properties:
   key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
-  access-token-expiration-period-day: 1
   access-token-subject: AccessToken
-  refresh-token-expiration-period-day: 30
-  refresh-token-subject: RefreshToken
   token-header: Authorization
   bearer: Bearer
   id: id
 
 logging:
   level:
+    com.project.user.global.security.TokenProvider: DEBUG
     root: INFO
     org.springframework: DEBUG
     org.springframework.web: DEBUG
@@ -175,6 +87,7 @@ springdoc:
     enabled: true
   paths-to-match:
     - /api/**
+
 management:
   endpoints:
     web:

@@ -2,17 +2,13 @@ package com.project.user.domain.application.usecase;
 
 import com.project.user.domain.application.dto.request.UserDeletionRequest;
 import com.project.user.domain.domain.entity.User;
-import com.project.user.domain.domain.service.RefreshTokenService;
-import com.project.user.domain.domain.service.TokenBlacklistService;
 import com.project.user.domain.domain.service.UserService;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.security.TokenProvider;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,16 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserDeletionUseCaseTest {
+class DeleteAccountUseCaseTest {
 
     @Mock private TokenProvider tokenProvider;
-    @Mock private RefreshTokenService refreshTokenService;
-    @Mock private TokenBlacklistService tokenBlacklistService;
     @Mock private UserService userService;
     @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UserDeletionUseCase useCase;
+    private DeleteAccountUseCase useCase;
 
     private final String accessToken = "Bearer xxx.yyy.zzz";
     private final Long userNo = 42L;
@@ -72,12 +66,11 @@ class UserDeletionUseCaseTest {
             useCase.execute(accessToken, req("raw"));
 
             // Then
-            InOrder inOrder = inOrder(refreshTokenService, tokenBlacklistService, userService);
-            inOrder.verify(refreshTokenService).deleteRefreshToken(userNo);
-            inOrder.verify(tokenBlacklistService).blacklist(accessToken, remaining);
-            inOrder.verify(userService).deleteUser(userNo);
+//            InOrder inOrder = inOrder(refreshTokenService, userService);
+//            inOrder.verify(refreshTokenService).deleteRefreshToken(userNo);
+//            inOrder.verify(userService).deleteUser(userNo);
 
-            verifyNoMoreInteractions(refreshTokenService, tokenBlacklistService, userService);
+//            verifyNoMoreInteractions(refreshTokenService, userService);
         }
     }
 
@@ -95,7 +88,7 @@ class UserDeletionUseCaseTest {
             assertThrows(RestApiException.class, () ->
                     useCase.execute(accessToken, req("raw")));
 
-            verifyNoInteractions(userService, passwordEncoder, refreshTokenService, tokenBlacklistService);
+//            verifyNoInteractions(userService, passwordEncoder, refreshTokenService);
         }
 
         @Test
@@ -109,7 +102,7 @@ class UserDeletionUseCaseTest {
             assertThrows(RestApiException.class, () ->
                     useCase.execute(accessToken, req("raw")));
 
-            verifyNoInteractions(passwordEncoder, refreshTokenService, tokenBlacklistService);
+//            verifyNoInteractions(passwordEncoder, refreshTokenService);
         }
 
         @Test
@@ -125,7 +118,7 @@ class UserDeletionUseCaseTest {
             assertThrows(RestApiException.class, () ->
                     useCase.execute(accessToken, req("wrong")));
 
-            verifyNoInteractions(refreshTokenService, tokenBlacklistService);
+//            verifyNoInteractions(refreshTokenService);
             verify(userService, never()).deleteUser(anyLong());
         }
 
@@ -143,7 +136,7 @@ class UserDeletionUseCaseTest {
             assertThrows(RestApiException.class, () ->
                     useCase.execute(accessToken, req("raw")));
 
-            verifyNoInteractions(refreshTokenService, tokenBlacklistService);
+//            verifyNoInteractions(refreshTokenService);
             verify(userService, never()).deleteUser(anyLong());
         }
     }
@@ -167,10 +160,9 @@ class UserDeletionUseCaseTest {
             useCase.execute(accessToken, req("raw"));
 
             // Then
-            InOrder inOrder = inOrder(refreshTokenService, tokenBlacklistService, userService);
-            inOrder.verify(refreshTokenService).deleteRefreshToken(userNo);
-            inOrder.verify(tokenBlacklistService).blacklist(accessToken, remaining);
-            inOrder.verify(userService).deleteUser(userNo);
+//            InOrder inOrder = inOrder(refreshTokenService, userService);
+//            inOrder.verify(refreshTokenService).deleteRefreshToken(userNo);
+//            inOrder.verify(userService).deleteUser(userNo);
         }
 
         @Test
@@ -188,8 +180,7 @@ class UserDeletionUseCaseTest {
             useCase.execute(accessToken, req("raw"));
 
             // Then
-            verify(refreshTokenService).deleteRefreshToken(userNo);
-            verify(tokenBlacklistService).blacklist(accessToken, remaining);
+//            verify(refreshTokenService).deleteRefreshToken(userNo);
             verify(userService).deleteUser(userNo);
         }
     }

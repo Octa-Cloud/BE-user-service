@@ -8,22 +8,24 @@ import com.project.user.global.exception.RestApiException;
 import com.project.user.global.security.TokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.UUID;
 
 import static com.project.user.global.exception.code.status.AuthErrorStatus.*;
-
+import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ID_TOKEN;
+import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_PASSWORD;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class UserDeletionUseCase {
+public class DeleteAccountUseCase {
 
     private final TokenProvider tokenProvider;
-    private final PasswordEncoder passwordEncoder;
     private final UserService userService;
     private final KafkaTemplate<String, String> kafka;  // ★ 카프카 프로듀서
     private final ObjectMapper om;
@@ -37,11 +39,13 @@ public class UserDeletionUseCase {
      * 컨트롤러는 202 Accepted로 비동기 진행 알림이 자연스럽다.
      */
     public void execute(String accessToken, UserDeletionRequest request) {
+        log.debug("accessToken userId={}", tokenProvider.getId(accessToken));
         Long userNo = tokenProvider.getId(accessToken)
                 .orElseThrow(() -> new RestApiException(INVALID_ID_TOKEN));
 
         User user = userService.findById(userNo);
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+
+        if (!BCrypt.checkpw(request.password(), user.getPassword())) {
             throw new RestApiException(INVALID_PASSWORD);
         }
 

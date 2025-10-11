@@ -18,10 +18,11 @@ public class ChangeNicknameController implements ChangeNicknameApiSpec {
     private final ChangeNicknameUseCase changeNicknameUseCase;
 
     @Override
-    public BaseResponse<ChangeNicknameResponse> changeNickname(
+    public BaseResponse<Void> changeNickname(
             @CurrentUser Long userNo,
             @Valid @RequestBody ChangeNicknameRequest request
             ){
-        return BaseResponse.onSuccess(changeNicknameUseCase.changeNickname(userNo,request));
+        changeNicknameUseCase.changeNickname(userNo,request);
+        return BaseResponse.onSuccess();
     }
 }
