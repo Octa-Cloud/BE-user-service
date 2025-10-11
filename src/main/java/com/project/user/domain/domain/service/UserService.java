@@ -52,9 +52,23 @@ public class UserService {
         if (!userRepository.existsById(userNo))
             throw new RestApiException(_NOT_FOUND);
     }
+    public User updateNickname(Long userNo, ChangeNicknameRequest request) {
+        User user = findById(userNo);
+        user.changeNickname(request.nickname());
+        return user;
+    }
 
+    public void updatePassword(Long userNo, ChangePasswordRequest request) {
+        //비밀번호 == 확인용 비밀번호 검사, 문자열 값 자체 비교
+        if(!Objects.equals(request.password(), request.checkPassword())){
+            throw new RestApiException(PASSWORD_NOT_MATCH);
+        }
+        User user = findById(userNo);
+        user.changePassword(passwordEncoder.encode(request.password()));
+    }
     @Transactional
     public void deleteUser(Long userNo) {
-        userRepository.deleteById(userNo);
+        // 멱등: 이미 삭제돼 있어도 예외 없이 통과
+        userRepository.findById(userNo).ifPresent(userRepository::delete);
     }
 }

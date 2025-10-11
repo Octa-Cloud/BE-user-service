@@ -1,22 +1,21 @@
 package com.project.user.domain.application.usecase;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.user.domain.application.dto.request.UserDeletionRequest;
 import com.project.user.domain.domain.entity.User;
-import com.project.user.domain.domain.service.RefreshTokenService;
-import com.project.user.domain.domain.service.TokenBlacklistService;
 import com.project.user.domain.domain.service.UserService;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.security.TokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.UUID;
 
-import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ACCESS_TOKEN;
-import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_ID_TOKEN;
-import static com.project.user.global.exception.code.status.AuthErrorStatus.INVALID_PASSWORD;
+import static com.project.user.global.exception.code.status.AuthErrorStatus.*;
 
 @Service
 @Transactional
@@ -24,26 +23,49 @@ import static com.project.user.global.exception.code.status.AuthErrorStatus.INVA
 public class UserDeletionUseCase {
 
     private final TokenProvider tokenProvider;
-    private final RefreshTokenService refreshTokenService;
-    private final TokenBlacklistService tokenBlacklistService;
-    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final KafkaTemplate<String, String> kafka;  // ★ 카프카 프로듀서
+    private final ObjectMapper om;
 
+    /**
+     * 유저 삭제 흐름의 시작점.
+     * 1) 액세스 토큰에서 userNo 추출 및 사용자 검증
+     * 2) 토큰 TTL(초) 계산 → 오케스트레이터가 블랙리스트 TTL로 사용
+     * 3) user.deletion.start 주제에 사가 시작 이벤트를 "동기 전송(get)"으로 발행
+     *    - acks=all + .get() 으로 브로커 수신을 확인(전송 멱등/안정성 강화)
+     * 컨트롤러는 202 Accepted로 비동기 진행 알림이 자연스럽다.
+     */
     public void execute(String accessToken, UserDeletionRequest request) {
         Long userNo = tokenProvider.getId(accessToken)
                 .orElseThrow(() -> new RestApiException(INVALID_ID_TOKEN));
 
         User user = userService.findById(userNo);
-
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new RestApiException(INVALID_PASSWORD);
         }
 
         Duration expiration = tokenProvider.getRemainingDuration(accessToken)
                 .orElseThrow(() -> new RestApiException(INVALID_ACCESS_TOKEN));
+        long ttlSec = Math.max(0, expiration.getSeconds());
 
-        refreshTokenService.deleteRefreshToken(userNo);
-        tokenBlacklistService.blacklist(accessToken, expiration);
-        userService.deleteUser(userNo);
+        var start = new StartEvent(
+                UUID.randomUUID().toString(), // ★ sagaId == correlationId
+                userNo,
+                accessToken,
+                ttlSec
+        );
+
+        try {
+            String payload = om.writeValueAsString(start);
+            // key=userNo 로 파티셔닝 → 동일 유저 이벤트 순서 보장
+            kafka.send("user.deletion.start", String.valueOf(userNo), payload).get();
+        } catch (Exception e) {
+            // 프로듀스 실패 → 트랜잭션 롤백(서비스 계층 예외로 래핑)
+            throw new RuntimeException("failed to publish user.deletion.start", e);
+        }
     }
+
+    // 오케스트레이터가 소비하는 시작 이벤트 포맷
+    public record StartEvent(String sagaId, Long userNo, String accessToken, long accessTokenTtlSec) {}
 }

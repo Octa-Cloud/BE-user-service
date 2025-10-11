@@ -1,7 +1,34 @@
 server:
   port: 8080
 
+resilience4j:
+  retry:
+    instances:
+      kafkaSend:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.RetriableException
+  circuitbreaker:
+    instances:
+      kafkaSend:
+        sliding-window-type: count_based
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+
 spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9094} # 기본값은 로컬 외부포트
+    consumer:
+      group-id: user-service
+    admin:
+      fail-fast: true
   datasource:
     username: ${RDB_USERNAME}
     url: ${RDB_URL}
@@ -10,8 +37,10 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
+      #host: ${SPRING_DATA_REDIS_HOST:localhost}
+      #port: ${SPRING_DATA_REDIS_PORT:6379}
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
 
   jpa:
     hibernate:
