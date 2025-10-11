@@ -30,34 +30,6 @@ spring:
       mail.smtp.starttls.enable: true
       mail.smtp.timeout: 5000
 
-
-exclude-auth-path-patterns:
-  paths:
-    - path-pattern: /api/users/sign-up
-      method: POST
-    - path-pattern: /api/email/send
-      method: POST
-    - path-pattern: /api/email/verify
-      method: POST
-    - path-pattern: /swagger-ui.html
-      method: GET
-    - path-pattern: /swagger-ui/index.html
-      method: GET
-    - path-pattern: /swagger-ui/**
-      method: GET
-    - path-pattern: /v3/api-docs
-      method: GET
-    - path-pattern: /v3/api-docs/swagger-config
-      method: GET
-    - path-pattern: /webjars
-      method: GET
-    - path-pattern: /actuator/health/**
-      method: GET
-    - path-pattern: /actuator/prometheus/**
-      method: GET
-    - path-pattern: /api/users/internal/**
-      method: POST
-
 jwt-properties:
   key: ${JWT_KEY:KItFWMZokpiSj6ABi42XJpNWbBqUJ4UT3mhLrXk//IjI2TgQy2Bk+2KrCk4cQDl8oFsSYH9Gr++Lqr2w6CYJnQ==}
   access-token-subject: AccessToken
@@ -85,6 +57,7 @@ springdoc:
     enabled: true
   paths-to-match:
     - /api/**
+
 management:
   endpoints:
     web:
