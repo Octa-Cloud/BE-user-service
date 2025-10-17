@@ -6,6 +6,7 @@ import com.project.user.domain.domain.entity.User;
 import com.project.user.domain.domain.service.UserService;
 import com.project.user.global.exception.RestApiException;
 import com.project.user.global.security.TokenProvider;
+import com.project.user.domain.infra.kafka.ResilientSender;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
@@ -27,9 +28,8 @@ public class DeleteAccountUseCase {
 
     private final TokenProvider tokenProvider;
     private final UserService userService;
-    private final KafkaTemplate<String, String> kafka;  // ★ 카프카 프로듀서
     private final ObjectMapper om;
-
+    private final ResilientSender sender;
     /**
      * 유저 삭제 흐름의 시작점.
      * 1) 액세스 토큰에서 userNo 추출 및 사용자 검증
@@ -63,10 +63,11 @@ public class DeleteAccountUseCase {
         try {
             String payload = om.writeValueAsString(start);
             // key=userNo 로 파티셔닝 → 동일 유저 이벤트 순서 보장
-            kafka.send("user.deletion.start", String.valueOf(userNo), payload).get();
+            //kafka.send("user.start-delete.command", String.valueOf(userNo), payload).get();
+            sender.sendSync("user.start-delete.command", String.valueOf(userNo), payload);
         } catch (Exception e) {
             // 프로듀스 실패 → 트랜잭션 롤백(서비스 계층 예외로 래핑)
-            throw new RuntimeException("failed to publish user.deletion.start", e);
+            throw new RuntimeException("failed to publish user.start-delete.command", e);
         }
     }
 

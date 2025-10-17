@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Component;
@@ -23,9 +22,8 @@ public class UserFinalDeleteListener {
 
     private final UserRepository userRepo;
     private final ProcessedEventRepository peRepo;
-    private final KafkaTemplate<String,String> kafka;
     private final ObjectMapper om;
-
+    private final ResilientSender sender;
     /** 멱등 시작 마킹: (없으면 INSERT) → 이미 SUCCESS면 스킵 */
     private boolean tryBegin(String eventId, String type){
         if (!peRepo.existsById(eventId)) {
@@ -61,7 +59,7 @@ public class UserFinalDeleteListener {
 
     /**
      * 최종 삭제 처리 플로우:
-     * - @RetryableTopic: 최대 5회 지수 백오프 재시도 → 실패 시 user.final.delete.dlt 로 이동
+     * - @RetryableTopic: 최대 5회 지수 백오프 재시도 → 실패 시 user.final-delete.command.dlt 로 이동
      * - InvalidPayloadException 은 exclude → 즉시 DLT(재시도 없음)
      * - 수신 → 파싱/검증(독성은 즉시 DLT) → 멱등 시작 → 비즈니스(하드 삭제) → reply 동기 전송
      * - 커밋 이후에만 수동 ACK(MANUAL_IMMEDIATE)로 오프셋 커밋 → DB/메시지 정합 보장
@@ -69,73 +67,76 @@ public class UserFinalDeleteListener {
     @RetryableTopic(
             attempts = "5",
             backoff = @Backoff(delay = 1000, multiplier = 2.0),
-            autoCreateTopics = "true",
+            autoCreateTopics = "false",
             dltTopicSuffix = ".dlt",
-            exclude = { InvalidPayloadException.class } // ★ 독성 페이로드는 즉시 DLT
+            exclude = { InvalidPayloadException.class }
     )
     @KafkaListener(
-            topics = "user.final.delete",
+            topics = "user.final-delete.command",
             groupId = "user-service",
             containerFactory = "kafkaManualAckFactory"
     )
     @Transactional
     public void onFinalDelete(ConsumerRecord<String,String> rec, Acknowledgment ack) throws Exception {
 
-        // 0) 파싱 + 유효성 검증 — 독성(InvalidPayloadException)은 즉시 DLT 보내도록 로깅 후 재던짐
+        // 0) 파싱 + 유효성 검증 — 독성(InvalidPayloadException)은 즉시 DLT
         final JsonNode n;
         try {
             n = om.readTree(rec.value());
-            String eventId = n.path("eventId").asText("").trim();
-            long userNo    = n.path("userNo").asLong(0L);
-            if (eventId.isEmpty()) throw new InvalidPayloadException("Missing or empty 'eventId'");
-            if (userNo <= 0L)      throw new InvalidPayloadException("Invalid 'userNo'");
-
-            // 1) 멱등 처리(이미 성공이면 스킵)
-            if (!tryBegin(eventId, "FINAL_DELETE")) {
-                ack.acknowledge();
-                return;
-            }
-
-            try {
-                // 2) 실제 하드 삭제(멱등)
-                userRepo.deleteById(userNo);
-
-                // 3) 성공 reply 동기 전송(acks=all, .get())
-                var reply = om.createObjectNode()
-                        .put("eventId", eventId)
-                        .put("userNo", userNo)
-                        .put("status", "SUCCESS")
-                        .put("type", "FINAL_DELETE");
-                kafka.send("user.final.reply", String.valueOf(userNo), om.writeValueAsString(reply)).get();
-
-                // 운영 관측성: 키/이벤트/유저
-                log.info("FINAL_DELETE ok key={}, eventId={}, userNo={}", rec.key(), eventId, userNo);
-
-                // 4) 성공 마킹
-                markSuccess(eventId);
-
-                // 5) 트랜잭션 커밋 이후 ACK (정합성 보장)
-                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                        new org.springframework.transaction.support.TransactionSynchronization() {
-                            @Override public void afterCommit() { ack.acknowledge(); }
-                        }
-                );
-            } catch (Exception ex) {
-                log.warn("FINAL_DELETE failed userNo={}, eventId={}, err={}", userNo, eventId, ex.toString());
-                markError(eventId, ex.getMessage());
-                throw ex; // 재시도 → 최대 횟수 후 DLT
-            }
-
-        } catch (InvalidPayloadException bad) {
-            // ★ 독성 페이로드 → 재시도 없이 즉시 DLT (exclude 규칙)
+        } catch (Exception e) {
             log.error("[user-service] toxic payload -> DLT, value={}", rec.value());
-            throw bad;
+            throw new InvalidPayloadException("Invalid JSON: " + e.getMessage(), e);
         }
-    }
 
-    @KafkaListener(topics = "user.final.delete.dlt", groupId = "user-service")
-    public void onFinalDeleteDlt(String payload){
-        // DLT 모니터링(알람/대시보드 연계 지점)
-        log.error("[DLT][user.final.delete] {}", payload);
+        final String eventId = n.path("eventId").asText("").trim();
+        final long userNo    = n.path("userNo").asLong(0L);
+        if (eventId.isEmpty()) throw new InvalidPayloadException("Missing or empty 'eventId'");
+        if (userNo <= 0L)      throw new InvalidPayloadException("Invalid 'userNo'");
+
+        // 1) 멱등 처리(이미 SUCCESS면 스킵)
+        if (!tryBegin(eventId, "FINAL_DELETE")) {
+            ack.acknowledge();
+            return;
+        }
+
+        // 2) 실제 하드 삭제(멱등)
+        try {
+            userRepo.deleteById(userNo);
+
+            // 3) 성공 마킹(DB 커밋 대상)
+            markSuccess(eventId);
+
+            // 4) 커밋 이후 reply 전송 + ACK
+            final String replyPayload = om.createObjectNode()
+                    .put("eventId", eventId)
+                    .put("userNo", userNo)
+                    .put("status", "SUCCESS")
+                    .put("type", "FINAL_DELETE")
+                    .toString();
+
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override public void afterCommit() {
+                            try {
+                                // 커밋 확정 후에만 브로커에 회신(정합성 ↑)
+                                sender.sendSync("user.final-delete.reply", String.valueOf(userNo), replyPayload);
+                                ack.acknowledge(); // 전송 성공시에만 오프셋 커밋
+                                log.info("FINAL_DELETE ok key={}, eventId={}, userNo={}", rec.key(), eventId, userNo);
+                            } catch (Exception sendEx) {
+                                // 전송 실패: ACK 하지 않음 → 오프셋 미커밋 상태 유지
+                                // 컨슈머 재시작/리밸런스 시 같은 레코드 재처리됨(@RetryableTopic와는 별개)
+                                log.error("FINAL_DELETE reply send failed (will be retried on re-consume). " +
+                                        "eventId={}, userNo={}, err={}", eventId, userNo, sendEx.toString());
+                            }
+                        }
+                    }
+            );
+
+        } catch (Exception ex) {
+            // 비즈니스/기술 예외 → 재시도/DTL 체인
+            log.warn("FINAL_DELETE failed userNo={}, eventId={}, err={}", userNo, eventId, ex.toString());
+            markError(eventId, ex.getMessage());
+            throw ex;
+        }
     }
 }

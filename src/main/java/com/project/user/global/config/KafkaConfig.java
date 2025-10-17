@@ -24,9 +24,9 @@ public class KafkaConfig {
         Map<String,Object> cfg = new HashMap<>(props.buildProducerProperties());
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        cfg.put(ProducerConfig.ACKS_CONFIG, "all");                 // 브로커 전부 ACK 요구
-        cfg.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);    // 멱등 프로듀서
-        cfg.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1); // 순서 보장
+//        cfg.put(ProducerConfig.ACKS_CONFIG, "all");                 // 브로커 전부 ACK 요구
+//        cfg.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);    // 멱등 프로듀서
+//        cfg.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1); // 순서 보장
         return new DefaultKafkaProducerFactory<>(cfg);
     }
     @Bean public KafkaTemplate<String,String> kafkaTemplate(ProducerFactory<String,String> pf){ return new KafkaTemplate<>(pf); }
@@ -37,7 +37,7 @@ public class KafkaConfig {
         cfg.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         cfg.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         cfg.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);   // 수동 커밋(ACK)
-        cfg.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"); // 운영 기본: 최신부터
+        cfg.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"); // 클라우드 운영 기본: 최신부터
         cfg.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);       // 배치 사이즈(사건당 작업시간 고려)
         cfg.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300_000); // 최대 처리 간격(5분)
         return new DefaultKafkaConsumerFactory<>(cfg);
@@ -58,7 +58,7 @@ public class KafkaConfig {
         var f = new ConcurrentKafkaListenerContainerFactory<String,String>();
         f.setConsumerFactory(cf);
         f.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE); // 우리가 직접 ack
-        f.setConcurrency(1); // 파티션 1개 기준(필요 시 조정)
+        //f.setConcurrency(1); // 파티션 1개 기준(필요 시 조정)
         return f;
     }
 
