@@ -36,7 +36,7 @@ public class UserService {
                 User.builder()
                         .email(request.email())
                         .name(request.name())
-                        .nickname(request.nickname())
+                        .birth(request.birth())
                         .password(BCrypt.hashpw(request.password(), BCrypt.gensalt(12)))
                         .gender(request.gender())
                         .build()
